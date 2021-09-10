@@ -1,15 +1,12 @@
+import { App } from './renderer/app';
 import * as MonacoType from 'monaco-editor';
-
-// Type-only-import
-import { App as AppType } from './renderer/app';
-import { EditorId } from './interfaces';
 
 declare global {
   interface Window {
     ElectronFiddle: {
-      app: AppType;
-      contentChangeListeners: Array<any>,
-      editors: Record<EditorId, MonacoType.editor.IStandaloneCodeEditor | null>;
+      app: App;
+      appPaths: Record<string, string>;
+      monaco: typeof MonacoType;
     };
   }
 }

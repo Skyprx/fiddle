@@ -1,17 +1,21 @@
 import * as React from 'react';
 
 import { Button } from '@blueprintjs/core';
-import { MosaicContext, MosaicRootActions, MosaicWindowContext } from 'react-mosaic-component';
+import {
+  MosaicContext,
+  MosaicRootActions,
+  MosaicWindowContext,
+} from 'react-mosaic-component';
 
-import { DocsDemoPage, MosaicId } from '../../interfaces';
+import { EditorId } from '../../interfaces';
 import { AppState } from '../state';
 
-export interface ToolbarButtonProps {
+interface ToolbarButtonProps {
   appState: AppState;
-  id: MosaicId;
+  id: EditorId;
 }
 
-export abstract class ToolbarButton extends React.PureComponent<ToolbarButtonProps> {
+abstract class ToolbarButton extends React.PureComponent<ToolbarButtonProps> {
   public static contextType = MosaicWindowContext;
   public context: MosaicWindowContext;
 
@@ -30,7 +34,9 @@ export abstract class ToolbarButton extends React.PureComponent<ToolbarButtonPro
   /**
    * Create a button that performs the actual action
    */
-  public abstract createButton(_mosaicActions: MosaicRootActions<any>): React.ReactNode;
+  public abstract createButton(
+    _mosaicActions: MosaicRootActions<any>,
+  ): React.ReactNode;
 }
 
 export class MaximizeButton extends ToolbarButton {
@@ -42,13 +48,7 @@ export class MaximizeButton extends ToolbarButton {
       mosaicActions.expand(this.context.mosaicWindowActions.getPath());
     };
 
-    return (
-      <Button
-        icon='maximize'
-        className='bp3-small'
-        onClick={onClick}
-      />
-    );
+    return <Button icon="maximize" className="bp3-small" onClick={onClick} />;
   }
 }
 
@@ -57,32 +57,8 @@ export class RemoveButton extends ToolbarButton {
    * Create a button that can remove this panel
    */
   public createButton(_mosaicActions: MosaicRootActions<any>) {
-    const onClick = () => this.props.appState.hideAndBackupMosaic(this.props.id);
+    const onClick = () => this.props.appState.editorMosaic.hide(this.props.id);
 
-    return (
-      <Button
-        icon='cross'
-        className='bp3-small'
-        onClick={onClick}
-      />
-    );
-  }
-}
-
-export class DocsDemoGoHomeButton extends ToolbarButton {
-  /**
-   * Create a button that can remove this panel
-   */
-  public createButton(_mosaicActions: MosaicRootActions<any>) {
-    const onClick = () => this.props.appState.currentDocsDemoPage = DocsDemoPage.DEFAULT;
-
-    return (
-      <Button
-        icon='home'
-        className='bp3-small'
-        onClick={onClick}
-        text='Overview'
-      />
-    );
+    return <Button icon="cross" className="bp3-small" onClick={onClick} />;
   }
 }

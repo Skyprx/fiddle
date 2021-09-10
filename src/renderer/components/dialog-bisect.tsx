@@ -7,11 +7,11 @@ import { Bisector } from '../bisect';
 import { AppState } from '../state';
 import { VersionSelect } from './version-select';
 
-export interface BisectDialogProps {
+interface BisectDialogProps {
   appState: AppState;
 }
 
-export interface BisectDialogState {
+interface BisectDialogState {
   startIndex: number;
   endIndex: number;
   allVersions: Array<RunnableVersion>;
@@ -25,11 +25,15 @@ export interface BisectDialogState {
  * @extends {React.Component<BisectDialogProps, BisectDialogState>}
  */
 @observer
-export class BisectDialog extends React.Component<BisectDialogProps, BisectDialogState> {
+export class BisectDialog extends React.Component<
+  BisectDialogProps,
+  BisectDialogState
+> {
   constructor(props: BisectDialogProps) {
     super(props);
 
     this.onSubmit = this.onSubmit.bind(this);
+    this.onAuto = this.onAuto.bind(this);
     this.onClose = this.onClose.bind(this);
     this.onBeginSelect = this.onBeginSelect.bind(this);
     this.onEndSelect = this.onEndSelect.bind(this);
@@ -40,7 +44,7 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
     this.state = {
       allVersions: this.props.appState.versionsToShow,
       startIndex: 10,
-      endIndex: 0
+      endIndex: 0,
     };
   }
 
@@ -52,26 +56,35 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
     this.setState({ endIndex: this.state.allVersions.indexOf(version) });
   }
 
+  getBisectRange(): RunnableVersion[] {
+    const { endIndex, startIndex, allVersions } = this.state;
+    return endIndex !== undefined && startIndex !== undefined
+      ? allVersions.slice(endIndex, startIndex + 1).reverse()
+      : [];
+  }
+
   /**
    * Handles the submission of the dialog
    *
    * @returns {Promise<void>}
    */
   public async onSubmit(): Promise<void> {
-    const { endIndex, startIndex, allVersions } = this.state;
-    const { appState } = this.props;
-
-    if (endIndex === undefined || startIndex === undefined) {
-      return;
+    const range = this.getBisectRange();
+    if (range.length > 1) {
+      const { appState } = this.props;
+      appState.Bisector = new Bisector(range);
+      const initialBisectPivot = appState.Bisector.getCurrentVersion().version;
+      appState.setVersion(initialBisectPivot);
+      this.onClose();
     }
+  }
 
-    const bisectRange = allVersions
-      .slice(endIndex, startIndex + 1);
-
-    appState.Bisector = new Bisector(bisectRange);
-    const initialBisectPivot = appState.Bisector.getCurrentVersion().version;
-    appState.setVersion(initialBisectPivot);
-    this.onClose();
+  public async onAuto(): Promise<void> {
+    const range = this.getBisectRange();
+    if (range.length > 1) {
+      window.ElectronFiddle.app.runner.autobisect(range);
+      this.onClose();
+    }
   }
 
   /**
@@ -96,26 +109,32 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
   }
 
   /**
+   * Can we autobisect?
+   */
+  get canAuto(): boolean {
+    return this.canSubmit;
+  }
+
+  /**
    * Renders the buttons
    */
   get buttons() {
     return [
-      (
-        <Button
-          icon='play'
-          key='submit'
-          disabled={!this.canSubmit}
-          onClick={this.onSubmit}
-          text='Begin'
-        />
-      ), (
-        <Button
-          icon='cross'
-          key='cancel'
-          onClick={this.onClose}
-          text='Cancel'
-        />
-      )
+      <Button
+        icon="play"
+        key="submit"
+        disabled={!this.canSubmit}
+        onClick={this.onSubmit}
+        text="Begin"
+      />,
+      <Button
+        icon="lab-test"
+        key="auto"
+        disabled={!this.canAuto}
+        onClick={this.onAuto}
+        text="Auto"
+      />,
+      <Button icon="cross" key="cancel" onClick={this.onClose} text="Cancel" />,
     ];
   }
 
@@ -124,25 +143,24 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
    */
   get help() {
     let moreHelp = (
-      <Button
-        icon='help'
-        text='Show help'
-        onClick={this.showHelp}
-      />
+      <Button icon="help" text="Show help" onClick={this.showHelp} />
     );
 
     if (this.state.showHelp) {
       moreHelp = (
         <>
           <p>
-            First, write a fiddle that reproduces a bug or an issue. Then, select the earliest version to
-            start your search with. Typically, that's the "last known good" version that did not have the bug.
-            Then, select that latest version to end the search with, usually the "first known bad" version.
+            First, write a fiddle that reproduces a bug or an issue. Then,
+            select the earliest version to start your search with. Typically,
+            that&apos;s the &quot;last known good&quot; version that did not
+            have the bug. Then, select that latest version to end the search
+            with, usually the &quot;first known bad&quot; version.
           </p>
           <p>
-            Once you begin your bisect, Fiddle will run your fiddle with a number of Electron versions, closing
-            in on the version that introduced the bug. Once completed, you will know which Electron version
-            introduced your issue.
+            Once you begin your bisect, Fiddle will run your fiddle with a
+            number of Electron versions, closing in on the version that
+            introduced the bug. Once completed, you will know which Electron
+            version introduced your issue.
           </p>
         </>
       );
@@ -151,9 +169,16 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
     return (
       <Callout style={{ marginTop: 0, marginBottom: '1rem' }}>
         <p>
-          A "bisect" is a popular method <a href='https://git-scm.com/docs/git-bisect' target='_blank'>
-          borrowed from <code>git</code></a> for learning which version of Electron introduced a bug. This
-          tool helps you perform a bisect.
+          A &quot;bisect&quot; is a popular method{' '}
+          <a
+            href="https://git-scm.com/docs/git-bisect"
+            target="_blank"
+            rel="noreferrer"
+          >
+            borrowed from <code>git</code>
+          </a>{' '}
+          for learning which version of Electron introduced a bug. This tool
+          helps you perform a bisect.
         </p>
         {moreHelp}
       </Callout>
@@ -168,13 +193,13 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
       <Dialog
         isOpen={isBisectDialogShowing}
         onClose={this.onClose}
-        title='Start a bisect session'
-        className='dialog-add-version'
+        title="Start a bisect session"
+        className="dialog-add-version"
       >
-        <div className='bp3-dialog-body'>
+        <div className="bp3-dialog-body">
           {this.help}
           <Label>
-            Earliest Version (Last "known good" version)
+            Earliest Version (Last &quot;known good&quot; version)
             <ButtonGroup fill={true}>
               <VersionSelect
                 currentVersion={allVersions[startIndex]}
@@ -185,7 +210,7 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
             </ButtonGroup>
           </Label>
           <Label>
-            Latest Version (First "known bad" version)
+            Latest Version (First &quot;known bad&quot; version)
             <ButtonGroup fill={true}>
               <VersionSelect
                 currentVersion={allVersions[endIndex]}
@@ -196,10 +221,8 @@ export class BisectDialog extends React.Component<BisectDialogProps, BisectDialo
             </ButtonGroup>
           </Label>
         </div>
-        <div className='bp3-dialog-footer'>
-          <div className='bp3-dialog-footer-actions'>
-            {this.buttons}
-          </div>
+        <div className="bp3-dialog-footer">
+          <div className="bp3-dialog-footer-actions">{this.buttons}</div>
         </div>
       </Dialog>
     );

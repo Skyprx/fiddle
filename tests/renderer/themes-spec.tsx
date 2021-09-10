@@ -1,33 +1,26 @@
+import * as fs from 'fs-extra';
 import * as path from 'path';
 
-import { activateTheme, getAvailableThemes, getTheme, readThemeFile } from '../../src/renderer/themes';
+import {
+  activateTheme,
+  getAvailableThemes,
+  getTheme,
+  readThemeFile,
+} from '../../src/renderer/themes';
 import { DefaultThemes } from '../../src/renderer/themes-defaults';
 
 jest.mock('fs-extra');
-jest.mock('../../src/utils/import', () => ({
-  fancyImport: async (p: string) => require(p)
-}));
 
 describe('themes', () => {
   describe('activateTheme()', () => {
     it('attempts to activate a theme', async () => {
-      const { editor } = window.ElectronFiddle.app.monaco as any;
+      const { editor } = (window as any).ElectronFiddle.monaco;
 
-      await activateTheme();
+      activateTheme(await getTheme());
 
       expect(editor.defineTheme).toHaveBeenCalled();
       expect(editor.setTheme).toHaveBeenCalled();
       expect(editor.defineTheme.mock.calls[0][1].base).toBe('vs-dark');
-    });
-
-    it(`does not do anything if Monaco isn't available yet`, async () => {
-      const { editor } = window.ElectronFiddle.app.monaco as any;
-      window.ElectronFiddle.app.monaco = null;
-
-      await activateTheme();
-
-      expect(editor.defineTheme).toHaveBeenCalledTimes(0);
-      expect(editor.setTheme).toHaveBeenCalledTimes(0);
     });
   });
 
@@ -38,10 +31,12 @@ describe('themes', () => {
     });
 
     it('reads the themes folder for themes', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValue(true);
-      fs.readdir.mockReturnValueOnce([ 'test-theme1.json', 'test-theme2.json' ]);
-      fs.readJSON.mockReturnValue({ test: true });
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readdir as jest.Mock).mockReturnValueOnce([
+        'test-theme1.json',
+        'test-theme2.json',
+      ]);
+      (fs.readJSON as jest.Mock).mockReturnValue({ test: true });
 
       const themes = await getAvailableThemes();
 
@@ -49,29 +44,31 @@ describe('themes', () => {
       expect(themes[2]).toEqual({
         test: true,
         name: 'test-theme1',
-        file: 'test-theme1.json'
+        file: 'test-theme1.json',
       });
       expect(themes[3]).toEqual({
         file: 'test-theme2.json',
         name: 'test-theme2',
-        test: true
+        test: true,
       });
     });
 
     it('handles a readdir error', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValueOnce(true);
-      fs.readdir.mockImplementationOnce(() => Promise.reject('Bwap'));
+      (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+      (fs.readdir as jest.Mock).mockImplementationOnce(() =>
+        Promise.reject('Bwap'),
+      );
 
       const themes = await getAvailableThemes();
       expect(themes).toHaveLength(2);
     });
 
     it('handles a readJSON error', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValueOnce(true);
-      fs.readdir.mockImplementationOnce(() => [ 'hi' ]);
-      fs.readJSON.mockImplementationOnce(() => Promise.reject('Bwap'));
+      (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+      (fs.readdir as jest.Mock).mockImplementationOnce(() => ['hi']);
+      (fs.readJSON as jest.Mock).mockImplementationOnce(() =>
+        Promise.reject('Bwap'),
+      );
 
       const themes = await getAvailableThemes();
       expect(themes).toHaveLength(2);
@@ -90,16 +87,19 @@ describe('themes', () => {
     });
 
     it('returns a named theme', async () => {
-      const fs = require('fs-extra');
-      fs.readJSON.mockReturnValue({ name: 'Test', common: { test: true } });
+      (fs.readJSON as jest.Mock).mockReturnValue({
+        name: 'Test',
+        common: { test: true },
+      });
 
       const theme = await getTheme('test');
       expect(theme.name).toBe('Test');
     });
 
     it('handles a read error', async () => {
-      const fs = require('fs-extra');
-      fs.readJSON.mockImplementationOnce(() => Promise.reject('Bwap'));
+      (fs.readJSON as jest.Mock).mockImplementationOnce(() =>
+        Promise.reject('Bwap'),
+      );
 
       const theme = await getTheme('test');
       expect(theme.name).toBe('Fiddle (Dark)');
@@ -123,8 +123,7 @@ describe('themes', () => {
     });
 
     it('reads the right file if ends with .json', async () => {
-      const fs = require('fs-extra');
-      fs.readJSON.mockReturnValueOnce({});
+      (fs.readJSON as jest.Mock).mockReturnValueOnce({});
 
       const theme = await readThemeFile('myfile.json');
       const expected = path.normalize(`~/.electron-fiddle/themes/myfile.json`);
@@ -134,8 +133,7 @@ describe('themes', () => {
     });
 
     it('reads the right file if does not end with .json', async () => {
-      const fs = require('fs-extra');
-      fs.readJSON.mockReturnValueOnce({});
+      (fs.readJSON as jest.Mock).mockReturnValueOnce({});
 
       const theme = await readThemeFile('myfile');
       const expected = path.normalize(`~/.electron-fiddle/themes/myfile.json`);

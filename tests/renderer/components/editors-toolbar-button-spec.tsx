@@ -1,25 +1,34 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { EditorId } from '../../../src/interfaces';
-import { MaximizeButton, RemoveButton } from '../../../src/renderer/components/editors-toolbar-button';
+import { DefaultEditorId } from '../../../src/interfaces';
+import {
+  MaximizeButton,
+  RemoveButton,
+} from '../../../src/renderer/components/editors-toolbar-button';
+
+import { StateMock } from '../../mocks/mocks';
 
 let mockContext: any = {};
 
 jest.mock('react-mosaic-component', () => {
-  const { MosaicContext, MosaicRootActions, MosaicWindowContext } = require.requireActual('react-mosaic-component');
+  const {
+    MosaicContext,
+    MosaicRootActions,
+    MosaicWindowContext,
+  } = jest.requireActual('react-mosaic-component');
 
   MosaicContext.Consumer = (props: any) => props.children(mockContext);
 
   return {
     MosaicContext,
     MosaicRootActions,
-    MosaicWindowContext
+    MosaicWindowContext,
   };
 });
 
 describe('Editor toolbar button component', () => {
-  let store: any = {};
+  let store: StateMock;
 
   beforeAll(() => {
     mockContext = {
@@ -28,7 +37,7 @@ describe('Editor toolbar button component', () => {
         split: jest.fn(),
         replaceWithNew: jest.fn(),
         setAdditionalControlsOpen: jest.fn(),
-        connectDragSource: jest.fn()
+        connectDragSource: jest.fn(),
       },
       mosaicActions: {
         expand: jest.fn(),
@@ -36,29 +45,33 @@ describe('Editor toolbar button component', () => {
         hide: jest.fn(),
         replaceWith: jest.fn(),
         updateTree: jest.fn(),
-        getRoot: jest.fn()
+        getRoot: jest.fn(),
       },
-      mosaicId: 'test'
+      mosaicId: 'test',
     };
 
-    store = {
-      hideAndBackupMosaic: jest.fn()
-    };
+    ({ state: store } = (window as any).ElectronFiddle.app);
   });
 
   describe('MaximizeButton', () => {
     it('renders', () => {
-      const wrapper = shallow(<MaximizeButton id={EditorId.main} appState={store} />, {
-        context: mockContext
-      });
+      const wrapper = shallow(
+        <MaximizeButton id={DefaultEditorId.main} appState={store as any} />,
+        {
+          context: mockContext,
+        },
+      );
 
       expect(wrapper).toMatchSnapshot();
     });
 
     it('handles a click', () => {
-      const wrapper = shallow(<MaximizeButton id={EditorId.main} appState={store} />, {
-        context: mockContext
-      });
+      const wrapper = shallow(
+        <MaximizeButton id={DefaultEditorId.main} appState={store as any} />,
+        {
+          context: mockContext,
+        },
+      );
 
       wrapper.instance().context = mockContext;
 
@@ -69,19 +82,27 @@ describe('Editor toolbar button component', () => {
 
   describe('RemoveButton', () => {
     it('renders', () => {
-      const wrapper = shallow(<RemoveButton id={EditorId.main} appState={store} />, {
-        context: mockContext
-      });
+      const wrapper = shallow(
+        <RemoveButton id={DefaultEditorId.main} appState={store as any} />,
+        {
+          context: mockContext,
+        },
+      );
       expect(wrapper).toMatchSnapshot();
     });
 
     it('handles a click', () => {
-      const wrapper = shallow(<RemoveButton id={EditorId.main} appState={store} />, {
-        context: mockContext
-      });
+      const hideSpy = jest.spyOn(store.editorMosaic, 'hide');
+
+      const wrapper = shallow(
+        <RemoveButton id={DefaultEditorId.main} appState={store as any} />,
+        {
+          context: mockContext,
+        },
+      );
 
       wrapper.dive().dive().find('button').simulate('click');
-      expect(store.hideAndBackupMosaic).toHaveBeenCalledTimes(1);
+      expect(hideSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

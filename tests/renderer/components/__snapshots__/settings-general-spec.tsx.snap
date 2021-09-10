@@ -7,6 +7,7 @@ exports[`GeneralSettings component renders 1`] = `
   </h2>
   <settings-appearance
     appState={Object {}}
+    toggleHasPopoverOpen={[Function]}
   />
   <Blueprint3.Divider />
   <settings-console
@@ -14,6 +15,10 @@ exports[`GeneralSettings component renders 1`] = `
   />
   <Blueprint3.Divider />
   <settings-github
+    appState={Object {}}
+  />
+  <Blueprint3.Divider />
+  <settings-block-accelerators
     appState={Object {}}
   />
 </div>

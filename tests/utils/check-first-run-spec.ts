@@ -1,13 +1,17 @@
 import * as fs from 'fs-extra';
+import * as electron from 'electron';
 
 import { isFirstRun } from '../../src/utils/check-first-run';
 
 jest.mock('fs-extra', () => ({
   existsSync: jest.fn(),
-  outputFileSync: jest.fn()
+  outputFileSync: jest.fn(),
 }));
 
 describe('isFirstRun', () => {
+  beforeEach(() => {
+    (electron.app.getPath as jest.Mock).mockReturnValue('path');
+  });
   it('reports a first run', () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
     expect(isFirstRun()).toBe(false);

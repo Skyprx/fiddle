@@ -1,7 +1,8 @@
-import { BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import { IpcEvents } from '../ipc-events';
 import { createContextMenu } from './context-menu';
 import { ipcMainManager } from './ipc';
+import * as path from 'path';
 
 // Keep a global reference of the window objects, if we don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -23,11 +24,12 @@ export function getMainWindowOptions(): Electron.BrowserWindowConstructorOptions
     backgroundColor: '#1d2427',
     webPreferences: {
       webviewTag: false,
-      nodeIntegration: true
-    }
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, '..', 'preload', 'preload'),
+    },
   };
 }
-
 
 /**
  * Creates a new main window.
@@ -49,9 +51,14 @@ export function createMainWindow(): Electron.BrowserWindow {
     }
   });
 
+  browserWindow.on('focus', () => {
+    if (browserWindow) {
+      ipcMainManager.send(IpcEvents.SET_SHOW_ME_TEMPLATE);
+    }
+  });
+
   browserWindow.on('closed', () => {
-    browserWindows = browserWindows
-      .filter((bw) => browserWindow !== bw);
+    browserWindows = browserWindows.filter((bw) => browserWindow !== bw);
 
     browserWindow = null;
   });
@@ -72,6 +79,22 @@ export function createMainWindow(): Electron.BrowserWindow {
     }
   });
 
+  ipcMainManager.handle(IpcEvents.GET_APP_PATHS, () => {
+    const paths = {};
+    const pathsToQuery = [
+      'home',
+      'appData',
+      'userData',
+      'temp',
+      'downloads',
+      'desktop',
+    ];
+    for (const path of pathsToQuery) {
+      paths[path] = app.getPath(path as any);
+    }
+    return paths;
+  });
+
   browserWindows.push(browserWindow);
 
   return browserWindow;
@@ -83,5 +106,7 @@ export function createMainWindow(): Electron.BrowserWindow {
  * @returns {Electron.BrowserWindow}
  */
 export function getOrCreateMainWindow(): Electron.BrowserWindow {
-  return BrowserWindow.getFocusedWindow() || browserWindows[0] || createMainWindow();
+  return (
+    BrowserWindow.getFocusedWindow() || browserWindows[0] || createMainWindow()
+  );
 }

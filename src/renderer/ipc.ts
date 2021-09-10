@@ -10,7 +10,7 @@ import { IpcEvents, ipcRendererEvents } from '../ipc-events';
  * @class IpcManager
  * @extends {EventEmitter}
  */
-export class IpcRendererManager extends EventEmitter {
+class IpcRendererManager extends EventEmitter {
   constructor() {
     super();
 
@@ -31,6 +31,10 @@ export class IpcRendererManager extends EventEmitter {
    */
   public send(channel: IpcEvents, ...args: Array<any>) {
     ipcRenderer.send(channel, ...args);
+  }
+
+  public invoke(channel: IpcEvents, ...args: Array<any>) {
+    return ipcRenderer.invoke(channel, ...args);
   }
 }
 

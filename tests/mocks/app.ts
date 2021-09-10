@@ -1,40 +1,23 @@
-import { FileManager } from './file-manager';
-import { RemoteLoader } from './remote-loader';
-import { RunnerMock } from './runner';
+import {
+  ElectronTypesMock,
+  FileManagerMock,
+  RemoteLoaderMock,
+  RunnerMock,
+  StateMock,
+  createEditorValues,
+} from './mocks';
 
 export class AppMock {
-  public setupUnsavedOnChangeListener = jest.fn();
+  public setup = jest.fn();
   public replaceFiddle = jest.fn();
-  public setEditorValues = jest.fn();
-  public getEditorValues = jest.fn(() => ({
-    main: 'main-content',
-    preload: 'preload-content',
-    renderer: 'renderer-content',
-    html: 'html-content',
-    css: 'css-content'
-  }));
+  public getEditorValues = jest.fn().mockResolvedValue(createEditorValues());
+  public loadTheme = jest.fn();
+  public openFiddle = jest.fn();
 
-  public setupTheme = jest.fn();
-
-  public typeDefDisposable = {
-    dispose: jest.fn()
-  };
-
-  public fileManager = new FileManager();
+  public fileManager = new FileManagerMock();
+  public remoteLoader = new RemoteLoaderMock();
+  public electronTypes = new ElectronTypesMock();
   public runner = new RunnerMock();
-  public remoteLoader = new RemoteLoader();
-
-  public monaco = {
-    editor: {
-      setTheme: jest.fn(),
-      defineTheme: jest.fn()
-    },
-    languages: {
-      typescript: {
-        javascriptDefaults: {
-          addExtraLib: jest.fn()
-        }
-      }
-    }
-  };
+  public state = new StateMock();
+  public taskRunner = {};
 }

@@ -8,7 +8,7 @@ const { app, BrowserWindow } = require('electron')
 
 const windows = []
 
-app.on('ready', () => {
+app.whenReady().then(() => {
   // BrowserWindows can be created in plenty of shapes, sizes, and forms.
   // Check out the editor's auto-completion for all the configuration
   // options available in the current version.
@@ -24,14 +24,17 @@ app.on('ready', () => {
     })
   )
 
-  // A transparent window
-  windows.push(
-    new BrowserWindow({
-      transparent: true,
-      x: 300,
-      y: 300
-    })
-  )
+  // A transparent window.
+  const windowOptions = {
+    transparent: true,
+    x: 300,
+    y: 300
+  }
+  // On Windows platforms, a transparent window must be frameless
+  if (process.platform === 'win32') {
+    windowOptions.frame = false
+  }
+  windows.push(new BrowserWindow(windowOptions))
 
   // A window that's fixed and always on top
   windows.push(

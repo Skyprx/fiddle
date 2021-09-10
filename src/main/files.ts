@@ -1,9 +1,9 @@
-import { dialog } from 'electron';
+import { dialog, app } from 'electron';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import { DefaultEditorId } from '../interfaces';
 
 import { IpcEvents } from '../ipc-events';
-import { INDEX_HTML_NAME, MAIN_JS_NAME, PACKAGE_NAME, RENDERER_JS_NAME } from '../shared-constants';
 import { ipcMainManager } from './ipc';
 
 /**
@@ -22,14 +22,14 @@ export function setupFileListeners() {
 export async function showOpenDialog() {
   const { filePaths } = await dialog.showOpenDialog({
     title: 'Open Fiddle',
-    properties: ['openDirectory']
+    properties: ['openDirectory'],
   });
 
   if (!filePaths || filePaths.length < 1) {
     return;
   }
-
-  ipcMainManager.send(IpcEvents.FS_OPEN_FIDDLE, [ filePaths[0] ]);
+  app.addRecentDocument(filePaths[0]);
+  ipcMainManager.send(IpcEvents.FS_OPEN_FIDDLE, [filePaths[0]]);
 }
 
 /**
@@ -38,13 +38,13 @@ export async function showOpenDialog() {
  */
 export async function showSaveDialog(event?: IpcEvents, as?: string) {
   // We want to save to a folder, so we'll use an open dialog here
-  const { filePaths } = await dialog.showOpenDialog({
+  const filePaths = dialog.showOpenDialogSync({
     buttonLabel: 'Save here',
     properties: ['openDirectory', 'createDirectory'],
-    title: `Save Fiddle${as ? ` as ${as}` : ''}`
+    title: `Save Fiddle${as ? ` as ${as}` : ''}`,
   });
 
-  if (!filePaths || filePaths.length < 1) {
+  if (!Array.isArray(filePaths) || filePaths.length === 0) {
     return;
   }
 
@@ -52,7 +52,7 @@ export async function showSaveDialog(event?: IpcEvents, as?: string) {
 
   // Let's confirm real quick if we want this
   if (await ensureSaveTargetEmpty(filePaths[0])) {
-    ipcMainManager.send(event || IpcEvents.FS_SAVE_FIDDLE, [ filePaths[0] ]);
+    ipcMainManager.send(event || IpcEvents.FS_SAVE_FIDDLE, [filePaths[0]]);
   }
 }
 
@@ -63,12 +63,9 @@ export async function showSaveDialog(event?: IpcEvents, as?: string) {
  * @returns {Promise<boolean>}
  */
 async function ensureSaveTargetEmpty(filePath: string): Promise<boolean> {
-  const targetPaths = [
-    path.join(filePath, INDEX_HTML_NAME),
-    path.join(filePath, RENDERER_JS_NAME),
-    path.join(filePath, MAIN_JS_NAME),
-    path.join(filePath, PACKAGE_NAME)
-  ];
+  const targetPaths = Object.values(DefaultEditorId).map((filename) =>
+    path.join(filePath, filename),
+  );
 
   let noFilesOrOverwriteGranted = true;
 
@@ -92,7 +89,7 @@ async function confirmFileOverwrite(filePath: string): Promise<boolean> {
   try {
     const result = await dialog.showMessageBox({
       type: 'warning',
-      buttons: [ 'Cancel', 'Yes' ],
+      buttons: ['Cancel', 'Yes'],
       message: 'Overwrite files?',
       detail: `The file ${filePath} already exists. Do you want to overwrite it?`,
     });
