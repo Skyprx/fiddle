@@ -1,51 +1,35 @@
+import { MAIN_JS } from '../../src/interfaces';
+import { getEmptyContent } from '../../src/utils/editor-utils';
 import { getTemplateValues } from '../../src/renderer/templates';
 
-jest.mock('fs-extra');
-jest.mock('path');
-jest.mock('../../src/renderer/constants', () => ({
-  USER_DATA_PATH: 'user/data/'
-}));
-jest.mock('../../src/utils/import', () => ({
-  fancyImport: async (p: string) => require(p)
-}));
+jest.unmock('fs-extra');
 
 describe('templates', () => {
+  const KNOWN_GOOD_TEMPLATE = 'clipboard';
+  const KNOWN_BAD_TEMPLATE = 'not-a-real-show-me';
+
   describe('getTemplateValues()', () => {
-    it('attempts to load template values', async () => {
-      const fs = require('fs-extra');
-
-      fs.readFile.mockReturnValueOnce('renderer');
-      fs.readFile.mockReturnValueOnce('main');
-      fs.readFile.mockReturnValueOnce('html');
-
-      const values = await getTemplateValues('test');
-
-      expect(values.html).toBe('html');
-      expect(values.main).toBe('main');
-      expect(values.renderer).toBe('renderer');
+    it('loads templates', async () => {
+      const values = await getTemplateValues(KNOWN_GOOD_TEMPLATE);
+      expect(values[MAIN_JS].length).toBeGreaterThan(0);
     });
 
     it('handles errors', async () => {
-      const fs = require('fs-extra');
-
-      fs.readFile.mockReturnValue(Promise.reject('bwap'));
-
-      const values = await getTemplateValues('test');
-
-      expect(values.html).toBe('');
-      expect(values.main).toBe('');
-      expect(values.renderer).toBe('');
+      const values = await getTemplateValues(KNOWN_BAD_TEMPLATE);
+      expect(values[MAIN_JS]).toBe(getEmptyContent(MAIN_JS));
     });
 
-    it('handles errors and reports the templates content', async () => {
-      const fs = require('fs-extra');
+    it('reports missing files', async () => {
+      console.log = jest.fn();
 
-      fs.readFile.mockReturnValue(Promise.reject('bwap'));
-      fs.existsSync.mockReturnValue(true);
+      await getTemplateValues(KNOWN_BAD_TEMPLATE);
 
-      await getTemplateValues('test');
-      expect(fs.existsSync).toHaveBeenCalledTimes(5);
-      expect(fs.readdirSync).toHaveBeenCalledTimes(5);
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringMatching('Got Fiddle from'),
+        [MAIN_JS],
+      );
+
+      (console.log as jest.Mock).mockClear();
     });
   });
 });

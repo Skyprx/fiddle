@@ -1,29 +1,28 @@
-import { forgeTransform} from '../../src/renderer/transforms/forge';
-
-jest.mock('../../src/shared-constants', () => ({
-  PACKAGE_NAME: 'package.json'
-}));
+import { PACKAGE_NAME } from '../../src/interfaces';
+import { forgeTransform } from '../../src/renderer/transforms/forge';
+import { getForgeVersion } from '../../src/utils/get-package';
 
 describe('forgeTransform()', () => {
   it('adds forge dependencies', async () => {
     const filesBefore = new Map();
-    filesBefore.set('package.json', JSON.stringify({}));
+    filesBefore.set(PACKAGE_NAME, JSON.stringify({}));
 
     const files = await forgeTransform(filesBefore);
-    expect(JSON.parse(files.get('package.json')!)).toEqual({
+    const forgeVersion = getForgeVersion();
+    expect(JSON.parse(files.get(PACKAGE_NAME)!)).toEqual({
       devDependencies: {
-        '@electron-forge/cli': '6.0.0-beta.34',
-        '@electron-forge/maker-deb': '6.0.0-beta.34',
-        '@electron-forge/maker-rpm': '6.0.0-beta.34',
-        '@electron-forge/maker-squirrel': '6.0.0-beta.34',
-        '@electron-forge/maker-zip': '6.0.0-beta.34'
+        '@electron-forge/cli': forgeVersion,
+        '@electron-forge/maker-deb': forgeVersion,
+        '@electron-forge/maker-rpm': forgeVersion,
+        '@electron-forge/maker-squirrel': forgeVersion,
+        '@electron-forge/maker-zip': forgeVersion,
       },
       scripts: {
         start: 'electron-forge start',
         package: 'electron-forge package',
         make: 'electron-forge make',
         publish: 'electron-forge publish',
-        lint: 'echo "No linting configured"'
+        lint: 'echo "No linting configured"',
       },
       config: {
         forge: {
@@ -34,29 +33,28 @@ describe('forgeTransform()', () => {
             },
             {
               name: '@electron-forge/maker-zip',
-              platforms: [
-                'darwin'
-              ]
+              platforms: ['darwin'],
             },
             {
               name: '@electron-forge/maker-deb',
-              config: {}
+              config: {},
             },
             {
               name: '@electron-forge/maker-rpm',
-              config: {}
-            }
-          ]
-        }
-      }
+              config: {},
+            },
+          ],
+        },
+      },
+      license: 'MIT',
     });
   });
 
   it('deals with errors', async () => {
     const filesBefore = new Map();
-    filesBefore.set('package.json', 'garbage');
+    filesBefore.set(PACKAGE_NAME, 'garbage');
 
     const files = await forgeTransform(filesBefore);
-    expect(files.get('package.json')).toBe('garbage');
+    expect(files.get(PACKAGE_NAME)).toBe('garbage');
   });
 });

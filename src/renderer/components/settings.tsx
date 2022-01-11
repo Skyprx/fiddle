@@ -12,22 +12,23 @@ enum SettingsSections {
   General = 'General',
   Electron = 'Electron',
   Execution = 'Execution',
-  Credits = 'Credits'
+  Credits = 'Credits',
 }
 
 const settingsSections = [
   SettingsSections.General,
   SettingsSections.Electron,
   SettingsSections.Execution,
-  SettingsSections.Credits
+  SettingsSections.Credits,
 ];
 
-export interface SettingsProps {
+interface SettingsProps {
   appState: AppState;
 }
 
-export interface SettingsState {
+interface SettingsState {
   section: SettingsSections;
+  hasPopoverOpen: boolean;
 }
 
 /**
@@ -42,7 +43,8 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
     super(props);
 
     this.state = {
-      section: SettingsSections.General
+      section: SettingsSections.General,
+      hasPopoverOpen: false,
     };
 
     this.closeSettingsPanel = this.closeSettingsPanel.bind(this);
@@ -53,7 +55,7 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
   }
 
   public componentWillUnmount() {
-    window.removeEventListener('keyup', this.closeSettingsPanel);
+    window.removeEventListener('keyup', this.closeSettingsPanel, true);
   }
 
   /**
@@ -67,7 +69,12 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
     const { appState } = this.props;
 
     if (section === SettingsSections.General) {
-      return <GeneralSettings appState={appState} />;
+      return (
+        <GeneralSettings
+          appState={appState}
+          toggleHasPopoverOpen={() => this.toggleHasPopoverOpen()}
+        />
+      );
     }
 
     if (section === SettingsSections.Electron) {
@@ -117,13 +124,13 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
     if (!isSettingsShowing) return null;
 
     return (
-      <div className='settings'>
-        <div className='settings-menu'>
+      <div className="settings">
+        <div className="settings-menu">
           <ul>{this.renderOptions()}</ul>
         </div>
-        <div className='settings-content'>
-          <div className='settings-close' onClick={appState.toggleSettings}>
-            <Icon icon='cross' />
+        <div className="settings-content">
+          <div className="settings-close" onClick={appState.toggleSettings}>
+            <Icon icon="cross" />
           </div>
           {this.renderContent()}
         </div>
@@ -151,11 +158,22 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
 
   /**
    * Trigger closing of the settings panel upon Esc
+   * If hasPopoverOpen is set to true, settings will not close as only the popover should close
    */
   private closeSettingsPanel(event: KeyboardEvent) {
     const { appState } = this.props;
-    if (event.code === 'Escape') {
+    if (event.code === 'Escape' && !this.state.hasPopoverOpen) {
       appState.isSettingsShowing = false;
     }
+  }
+
+  /**
+   * Toggles whether there is a popover open
+   */
+  public toggleHasPopoverOpen(): void {
+    this.setState({
+      ...this.state,
+      hasPopoverOpen: !this.state.hasPopoverOpen,
+    });
   }
 }

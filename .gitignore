@@ -21,12 +21,10 @@
 /out/
 node_modules/
 SHASUMS256.txt
-**/yarn.lock
 compile_commands.json
 .envrc
 .cache
 yarn-error.log
-.DS_Store
 
 # Coverage
 coverage

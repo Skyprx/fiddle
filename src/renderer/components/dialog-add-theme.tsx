@@ -1,21 +1,20 @@
 import { Button, Dialog, FileInput } from '@blueprintjs/core';
 import { shell } from 'electron';
-import * as fsType from 'fs-extra';
+import * as fs from 'fs-extra';
 import { observer } from 'mobx-react';
 import * as MonacoType from 'monaco-editor';
 import * as path from 'path';
 import * as React from 'react';
 import { getTheme, THEMES_PATH } from '../themes';
 
-import { GenericDialogType } from '../../../src/interfaces';
 import { AppState } from '../state';
 import { defaultDark, LoadedFiddleTheme } from '../themes-defaults';
 
-export interface AddThemeDialogProps {
+interface AddThemeDialogProps {
   appState: AppState;
 }
 
-export interface AddThemeDialogState {
+interface AddThemeDialogState {
   file?: File;
 }
 
@@ -26,7 +25,10 @@ export interface AddThemeDialogState {
  * @extends {React.Component<AddThemeDialogProps, AddThemeDialogState>}
  */
 @observer
-export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThemeDialogState> {
+export class AddThemeDialog extends React.Component<
+  AddThemeDialogProps,
+  AddThemeDialogState
+> {
   public resetState = { file: undefined };
 
   constructor(props: AddThemeDialogProps) {
@@ -40,40 +42,42 @@ export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThem
   }
 
   /**
-   * Handles a change of the file input
+   * Handles a change of the file input.
    *
    * @param {React.ChangeEvent<HTMLInputElement>} event
    */
   public async onChangeFile(event: React.FormEvent<HTMLInputElement>) {
     const { files } = event.target as any;
-    const file = files && files[0] ? files[0] : undefined;
+    const file = files?.[0];
 
     this.setState({ file });
   }
 
   /**
-   * Handles the submission of the dialog
+   * Handles the submission of the dialog.
    *
    * @returns {Promise<void>}
    */
   public async onSubmit(): Promise<void> {
     const { file } = this.state;
-    const defaultTheme = !!this.props.appState.theme ? await getTheme(this.props.appState.theme) : defaultDark;
+    const { appState } = this.props;
+
+    const defaultTheme = !!appState.theme
+      ? await getTheme(appState.theme)
+      : defaultDark;
+
     if (!file) return;
 
     try {
-      const editor = fsType.readJSONSync(file.path);
-      if (!editor.base && !editor.rules) throw Error('File does not match specifications'); // has to have these attributes
+      const editor = fs.readJSONSync(file.path);
+      if (!editor.base && !editor.rules)
+        throw Error('File does not match specifications'); // has to have these attributes
       defaultTheme.editor = editor as Partial<MonacoType.editor.IStandaloneThemeData>;
       const newTheme = defaultTheme;
       const name = editor.name ? editor.name : file.name;
       await this.createNewThemeFromMonaco(name, newTheme);
     } catch (error) {
-      this.props.appState.setGenericDialogOptions({
-        type: GenericDialogType.warning,
-        label: `Error: ${error}, please pick a different file.`
-      });
-      this.props.appState.isGenericDialogShowing = true;
+      appState.showErrorDialog(`${error}, please pick a different file.`);
       return;
     }
 
@@ -81,40 +85,41 @@ export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThem
     return;
   }
 
-  public async createNewThemeFromMonaco(name: string, newTheme: LoadedFiddleTheme): Promise<boolean> {
-      if (!name) return false;
-      const themePath = path.join(THEMES_PATH, `${name}`);
+  public async createNewThemeFromMonaco(
+    name: string,
+    newTheme: LoadedFiddleTheme,
+  ): Promise<void> {
+    if (!name) {
+      throw new Error(`Filename ${name} not found`);
+    }
 
-      await fsType.outputJSON(themePath, {
+    const themePath = path.join(THEMES_PATH, `${name}`);
+
+    await fs.outputJSON(
+      themePath,
+      {
         ...newTheme,
         name,
-      }, {spaces: 2});
+      },
+      { spaces: 2 },
+    );
 
-      this.props.appState.setTheme(themePath);
-      shell.showItemInFolder(themePath);
-      return true;
+    this.props.appState.setTheme(themePath);
+    shell.showItemInFolder(themePath);
   }
 
   get buttons() {
     const canSubmit = !!this.state.file;
 
     return [
-      (
-        <Button
-          icon='add'
-          key='submit'
-          disabled={!canSubmit}
-          onClick={this.onSubmit}
-          text='Add'
-        />
-      ), (
-        <Button
-          icon='cross'
-          key='cancel'
-          onClick={this.onClose}
-          text='Cancel'
-        />
-      )
+      <Button
+        icon="add"
+        key="submit"
+        disabled={!canSubmit}
+        onClick={this.onSubmit}
+        text="Add"
+      />,
+      <Button icon="cross" key="cancel" onClick={this.onClose} text="Cancel" />,
     ];
   }
 
@@ -133,10 +138,10 @@ export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThem
       <Dialog
         isOpen={isThemeDialogShowing}
         onClose={this.onClose}
-        title='Add theme'
-        className='dialog-add-version'
+        title="Add theme"
+        className="dialog-add-version"
       >
-        <div className='bp3-dialog-body'>
+        <div className="bp3-dialog-body">
           <FileInput
             onInputChange={this.onChangeFile}
             inputProps={inputProps as any}
@@ -144,10 +149,8 @@ export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThem
           />
           <br />
         </div>
-        <div className='bp3-dialog-footer'>
-          <div className='bp3-dialog-footer-actions'>
-            {this.buttons}
-          </div>
+        <div className="bp3-dialog-footer">
+          <div className="bp3-dialog-footer-actions">{this.buttons}</div>
         </div>
       </Dialog>
     );
@@ -160,5 +163,4 @@ export class AddThemeDialog extends React.Component<AddThemeDialogProps, AddThem
     this.setState(this.resetState);
     return;
   }
-
 }

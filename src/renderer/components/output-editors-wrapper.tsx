@@ -1,59 +1,65 @@
 import * as React from 'react';
-import { Mosaic, MosaicNode } from 'react-mosaic-component';
+import { Mosaic, MosaicNode, MosaicParent } from 'react-mosaic-component';
 
 import { AppState } from '../state';
 import { Editors } from './editors';
-import { Output } from './output';
+import { Outputs } from './outputs';
+import { Sidebar } from './sidebar';
 
-export interface WrapperProps {
+interface WrapperProps {
   appState: AppState;
 }
 
-export interface WrapperState {
-  mosaicArrangement: MosaicNode<WrapperMosaicId>;
+interface WrapperState {
+  mosaic: MosaicNode<WrapperEditorId>;
 }
 
-export type WrapperMosaicId = 'output' | 'editors';
+export type WrapperEditorId = 'output' | 'editors' | 'sidebar';
 
-export class OutputEditorsWrapper extends React.Component<WrapperProps, WrapperState> {
-
+export class OutputEditorsWrapper extends React.Component<
+  WrapperProps,
+  WrapperState
+> {
   private MOSAIC_ELEMENTS = {
-    output: <Output appState={this.props.appState} />,
-    editors: <Editors appState={this.props.appState} />
+    output: <Outputs appState={this.props.appState} />,
+    editors: <Editors appState={this.props.appState} />,
+    sidebar: <Sidebar appState={this.props.appState} />,
   };
 
   constructor(props: any) {
     super(props);
     this.state = {
-      mosaicArrangement: {
+      mosaic: {
         direction: 'column',
         first: 'output',
-        second: 'editors',
+        second: {
+          direction: 'row',
+          first: 'sidebar',
+          second: 'editors',
+          splitPercentage: 15,
+        },
         splitPercentage: 25,
-      }
+      },
     };
   }
 
   public render() {
     return (
-      <>
-        <Mosaic<WrapperMosaicId>
-          renderTile={(id: string) => this.MOSAIC_ELEMENTS[id]}
-          resize={{minimumPaneSizePercentage: 0}}
-          value={this.state.mosaicArrangement}
-          onChange={this.onChange}
-        />
-      </>
+      <Mosaic<WrapperEditorId>
+        renderTile={(id: string) => this.MOSAIC_ELEMENTS[id]}
+        resize={{ minimumPaneSizePercentage: 0 }}
+        value={this.state.mosaic}
+        onChange={this.onChange}
+      />
     );
   }
 
-  private onChange = (currentNode: any) => {
-    const isConsoleShowing = currentNode.splitPercentage !== 0;
+  private onChange = (rootNode: MosaicParent<WrapperEditorId>) => {
+    const isConsoleShowing = rootNode.splitPercentage !== 0;
 
     if (isConsoleShowing !== this.props.appState.isConsoleShowing) {
       this.props.appState.isConsoleShowing = isConsoleShowing;
     }
-
-    this.setState({mosaicArrangement: currentNode});
-  }
+    this.setState({ mosaic: rootNode });
+  };
 }

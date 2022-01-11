@@ -2,7 +2,7 @@ import { Button } from '@blueprintjs/core';
 import { observer } from 'mobx-react';
 import * as React from 'react';
 
-import { GenericDialogType, VersionState } from '../../../src/interfaces';
+import { VersionState } from '../../../src/interfaces';
 import { AppState } from '../state';
 
 interface BisectHandlerProps {
@@ -29,15 +29,22 @@ export class BisectHandler extends React.Component<BisectHandlerProps> {
 
       const [minRev, maxRev] = response;
       const [minVer, maxVer] = [minRev.version, maxRev.version];
-      const message = `Check between versions ${minVer} and ${maxVer}.`;
+      const label = (
+        <>
+          Bisect complete. Check the range{' '}
+          <a
+            target="_blank"
+            rel="noreferrer"
+            href={`https://github.com/electron/electron/compare/v${minVer}...v${maxVer}`}
+          >
+            {minVer}...{maxVer}
+          </a>
+          .
+        </>
+      );
 
-      appState.pushOutput(`[BISECT] Complete: ${message}`);
-      appState.setGenericDialogOptions({
-        type: GenericDialogType.success,
-        label: `Bisect complete. ${message}`,
-        cancel: undefined
-      });
-      appState.isGenericDialogShowing = true;
+      appState.pushOutput(`[BISECT] Complete: ${minVer}...${maxVer}`);
+      appState.showInfoDialog(label);
     } else {
       appState.setVersion(response.version);
     }
@@ -51,7 +58,8 @@ export class BisectHandler extends React.Component<BisectHandlerProps> {
   public render() {
     const { appState } = this.props;
     if (!!appState.Bisector) {
-      const isDownloading = appState.currentElectronVersion.state === VersionState.downloading;
+      const isDownloading =
+        appState.currentElectronVersion.state === VersionState.downloading;
       return (
         <>
           <Button
@@ -64,10 +72,7 @@ export class BisectHandler extends React.Component<BisectHandlerProps> {
             onClick={() => this.continueBisect(false)}
             disabled={isDownloading}
           />
-          <Button
-            icon={'cross'}
-            onClick={this.terminateBisect}
-          >
+          <Button icon={'cross'} onClick={this.terminateBisect}>
             Cancel Bisect
           </Button>
         </>
@@ -75,8 +80,9 @@ export class BisectHandler extends React.Component<BisectHandlerProps> {
     } else {
       return (
         <Button
-          icon='git-branch'
-          text='Bisect'
+          icon="git-branch"
+          text="Bisect"
+          disabled={appState.isAutoBisecting}
           onClick={appState.toggleBisectDialog}
         />
       );

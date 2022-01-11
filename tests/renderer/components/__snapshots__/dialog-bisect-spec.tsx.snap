@@ -20,9 +20,11 @@ exports[`BisectDialog component renders 1`] = `
       }
     >
       <p>
-        A "bisect" is a popular method 
+        A "bisect" is a popular method
+         
         <a
           href="https://git-scm.com/docs/git-bisect"
+          rel="noreferrer"
           target="_blank"
         >
           borrowed from 
@@ -30,7 +32,8 @@ exports[`BisectDialog component renders 1`] = `
             git
           </code>
         </a>
-         for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
+         
+        for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
       </p>
       <Blueprint3.Button
         icon="help"
@@ -49,63 +52,29 @@ exports[`BisectDialog component renders 1`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -132,63 +101,29 @@ exports[`BisectDialog component renders 1`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -217,6 +152,13 @@ exports[`BisectDialog component renders 1`] = `
         key="submit"
         onClick={[Function]}
         text="Begin"
+      />
+      <Blueprint3.Button
+        disabled={false}
+        icon="lab-test"
+        key="auto"
+        onClick={[Function]}
+        text="Auto"
       />
       <Blueprint3.Button
         icon="cross"
@@ -249,9 +191,11 @@ exports[`BisectDialog component renders 2`] = `
       }
     >
       <p>
-        A "bisect" is a popular method 
+        A "bisect" is a popular method
+         
         <a
           href="https://git-scm.com/docs/git-bisect"
+          rel="noreferrer"
           target="_blank"
         >
           borrowed from 
@@ -259,7 +203,8 @@ exports[`BisectDialog component renders 2`] = `
             git
           </code>
         </a>
-         for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
+         
+        for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
       </p>
       <Blueprint3.Button
         icon="help"
@@ -278,63 +223,29 @@ exports[`BisectDialog component renders 2`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -354,63 +265,29 @@ exports[`BisectDialog component renders 2`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -432,6 +309,13 @@ exports[`BisectDialog component renders 2`] = `
         key="submit"
         onClick={[Function]}
         text="Begin"
+      />
+      <Blueprint3.Button
+        disabled={true}
+        icon="lab-test"
+        key="auto"
+        onClick={[Function]}
+        text="Auto"
       />
       <Blueprint3.Button
         icon="cross"
@@ -464,9 +348,11 @@ exports[`BisectDialog component renders 3`] = `
       }
     >
       <p>
-        A "bisect" is a popular method 
+        A "bisect" is a popular method
+         
         <a
           href="https://git-scm.com/docs/git-bisect"
+          rel="noreferrer"
           target="_blank"
         >
           borrowed from 
@@ -474,7 +360,8 @@ exports[`BisectDialog component renders 3`] = `
             git
           </code>
         </a>
-         for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
+         
+        for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
       </p>
       <Blueprint3.Button
         icon="help"
@@ -493,63 +380,29 @@ exports[`BisectDialog component renders 3`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -576,63 +429,29 @@ exports[`BisectDialog component renders 3`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -654,6 +473,13 @@ exports[`BisectDialog component renders 3`] = `
         key="submit"
         onClick={[Function]}
         text="Begin"
+      />
+      <Blueprint3.Button
+        disabled={true}
+        icon="lab-test"
+        key="auto"
+        onClick={[Function]}
+        text="Auto"
       />
       <Blueprint3.Button
         icon="cross"
@@ -686,9 +512,11 @@ exports[`BisectDialog component renders 4`] = `
       }
     >
       <p>
-        A "bisect" is a popular method 
+        A "bisect" is a popular method
+         
         <a
           href="https://git-scm.com/docs/git-bisect"
+          rel="noreferrer"
           target="_blank"
         >
           borrowed from 
@@ -696,7 +524,8 @@ exports[`BisectDialog component renders 4`] = `
             git
           </code>
         </a>
-         for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
+         
+        for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
       </p>
       <Blueprint3.Button
         icon="help"
@@ -715,63 +544,29 @@ exports[`BisectDialog component renders 4`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -798,63 +593,29 @@ exports[`BisectDialog component renders 4`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -883,6 +644,13 @@ exports[`BisectDialog component renders 4`] = `
         key="submit"
         onClick={[Function]}
         text="Begin"
+      />
+      <Blueprint3.Button
+        disabled={true}
+        icon="lab-test"
+        key="auto"
+        onClick={[Function]}
+        text="Auto"
       />
       <Blueprint3.Button
         icon="cross"
@@ -915,9 +683,11 @@ exports[`BisectDialog component renders 5`] = `
       }
     >
       <p>
-        A "bisect" is a popular method 
+        A "bisect" is a popular method
+         
         <a
           href="https://git-scm.com/docs/git-bisect"
+          rel="noreferrer"
           target="_blank"
         >
           borrowed from 
@@ -925,7 +695,8 @@ exports[`BisectDialog component renders 5`] = `
             git
           </code>
         </a>
-         for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
+         
+        for learning which version of Electron introduced a bug. This tool helps you perform a bisect.
       </p>
       <p>
         First, write a fiddle that reproduces a bug or an issue. Then, select the earliest version to start your search with. Typically, that's the "last known good" version that did not have the bug. Then, select that latest version to end the search with, usually the "first known bad" version.
@@ -945,63 +716,29 @@ exports[`BisectDialog component renders 5`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -1028,63 +765,29 @@ exports[`BisectDialog component renders 5`] = `
               "channelsToShow": Array [
                 "Stable",
               ],
-              "setVersion": [MockFunction],
-              "statesToShow": Array [
-                "ready",
-              ],
               "versions": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
               "versionsToShow": Array [
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "1.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "2.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "3.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "4.0.0",
-                },
-                Object {
-                  "source": "local",
-                  "state": "ready",
-                  "version": "5.0.0",
-                },
+                "1.0.0 local ready",
+                "2.0.0 local ready",
+                "3.0.0 local ready",
+                "4.0.0 local ready",
+                "5.0.0 local ready",
+                "6.0.0 local ready",
+                "7.0.0 local ready",
+                "8.0.0 local ready",
+                "9.0.0 local ready",
+                "10.0.0 local ready",
               ],
             }
           }
@@ -1113,6 +816,13 @@ exports[`BisectDialog component renders 5`] = `
         key="submit"
         onClick={[Function]}
         text="Begin"
+      />
+      <Blueprint3.Button
+        disabled={true}
+        icon="lab-test"
+        key="auto"
+        onClick={[Function]}
+        text="Auto"
       />
       <Blueprint3.Button
         icon="cross"

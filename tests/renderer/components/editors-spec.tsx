@@ -1,231 +1,257 @@
 import { mount, shallow } from 'enzyme';
-import { observable } from 'mobx';
 import * as React from 'react';
 
-import { ALL_MOSAICS, DocsDemoPage, EditorId } from '../../../src/interfaces';
+import * as content from '../../../src/renderer/content';
+import { EditorValues, MAIN_JS } from '../../../src/interfaces';
+import { Editors } from '../../../src/renderer/components/editors';
 import { IpcEvents } from '../../../src/ipc-events';
-import { Editors, TITLE_MAP } from '../../../src/renderer/components/editors';
+import { EditorMosaic } from '../../../src/renderer/editor-mosaic';
 import { ipcRendererManager } from '../../../src/renderer/ipc';
-import { updateEditorLayout } from '../../../src/utils/editor-layout';
-import { createMosaicArrangement } from '../../../src/utils/editors-mosaic-arrangement';
-import { getFocusedEditor } from '../../../src/utils/focused-editor';
+
+import {
+  AppMock,
+  MonacoEditorMock,
+  StateMock,
+  createEditorValues,
+} from '../../mocks/mocks';
 
 jest.mock('monaco-loader', () =>
   jest.fn(async () => {
     return { monaco: true };
-  })
+  }),
 );
 
 jest.mock('../../../src/renderer/components/editor', () => ({
-  Editor: () => 'Editor'
-}));
-
-jest.mock('../../../src/utils/focused-editor', () => ({
-  getFocusedEditor: jest.fn()
-}));
-
-jest.mock('../../../src/utils/editor-layout', () => ({
-  updateEditorLayout: jest.fn()
+  Editor: () => 'Editor',
 }));
 
 describe('Editors component', () => {
-  let store: any;
+  let app: AppMock;
   let monaco: any;
+  let store: StateMock;
+  let editorMosaic: EditorMosaic;
+  let editorValues: EditorValues;
 
   beforeEach(() => {
-    store = {
-      isTokenDialogShowing: false,
-      isSettingsShowing: false,
-      setGenericDialogOptions: () => ({}),
-      mosaicArrangement: createMosaicArrangement(ALL_MOSAICS),
-      currentDocsDemoPage: DocsDemoPage.DEFAULT
-    };
+    ({ app, monaco } = (window as any).ElectronFiddle);
+    ({ state: store } = app);
+    editorValues = createEditorValues();
+    editorMosaic = new EditorMosaic();
+    editorMosaic.set(editorValues);
 
-    monaco = {
-      editor: {
-        defineTheme: jest.fn()
-      }
-    };
+    store.editorMosaic = editorMosaic as any;
   });
 
   it('renders', () => {
-    const wrapper = mount(<Editors appState={store} />);
+    const wrapper = mount(<Editors appState={store as any} />);
     wrapper.setState({ monaco });
     expect(wrapper).toMatchSnapshot();
   });
 
   it('does not execute command if not supported', () => {
-    const wrapper = shallow(<Editors appState={store} />);
+    const wrapper = shallow(<Editors appState={store as any} />);
     const instance: Editors = wrapper.instance() as any;
-    const mockAction = {
-      isSupported: jest.fn(() => false),
-      run: jest.fn()
-    };
-    const mockEditor = {
-      getAction: jest.fn(() => mockAction)
-    };
 
-    (getFocusedEditor as any).mockReturnValueOnce(mockEditor);
+    const editor = new MonacoEditorMock();
+    const action = editor.getAction();
+    action.isSupported.mockReturnValue(false);
+
+    editorMosaic.focusedEditor = jest.fn().mockReturnValue(editor);
 
     instance.executeCommand('hello');
-    expect(mockEditor.getAction).toHaveBeenCalled();
-    expect(mockAction.isSupported).toHaveBeenCalled();
-    expect(mockAction.run).toHaveBeenCalledTimes(0);
+    expect(editor.getAction).toHaveBeenCalled();
+    expect(action.isSupported).toHaveBeenCalled();
+    expect(action.run).toHaveBeenCalledTimes(0);
   });
 
   describe('toggleEditorOption()', () => {
-    it('handles a missing ElectronFiddle global', () => {
-      const oldEditors = window.ElectronFiddle.editors;
-      window.ElectronFiddle.editors = undefined as any;
-
-      const wrapper = shallow(<Editors appState={store} />);
-      const instance: Editors = wrapper.instance() as any;
-
-      expect(instance.toggleEditorOption('wordWrap')).toBe(false);
-      window.ElectronFiddle.editors = oldEditors;
-    });
+    const filename = MAIN_JS;
 
     it('handles an error', () => {
-      (window.ElectronFiddle.editors.html!
-        .updateOptions as jest.Mock).mockImplementationOnce(() => {
+      const editor = new MonacoEditorMock();
+      editorMosaic.addEditor(filename, editor as any);
+      editor.updateOptions.mockImplementationOnce(() => {
         throw new Error('Bwap bwap');
       });
 
-      const wrapper = shallow(<Editors appState={store} />);
+      const wrapper = shallow(<Editors appState={store as any} />);
       const instance: Editors = wrapper.instance() as any;
 
       expect(instance.toggleEditorOption('wordWrap')).toBe(false);
     });
 
     it('updates a setting', () => {
-      const wrapper = shallow(<Editors appState={store} />);
+      const wrapper = shallow(<Editors appState={store as any} />);
       const instance: Editors = wrapper.instance() as any;
 
+      const editor = new MonacoEditorMock();
+      editorMosaic.addEditor(filename, editor as any);
       expect(instance.toggleEditorOption('wordWrap')).toBe(true);
-      expect(
-        window.ElectronFiddle.editors.html!.updateOptions
-      ).toHaveBeenCalledWith({
+      expect(editor.updateOptions).toHaveBeenCalledWith({
         minimap: { enabled: false },
-        wordWrap: 'off'
+        wordWrap: 'off',
       });
     });
   });
 
   it('renders a toolbar', () => {
-    const wrapper = shallow(<Editors appState={store} />);
+    const wrapper = shallow(<Editors appState={store as any} />);
     const instance: Editors = wrapper.instance() as any;
-    const toolbar = instance.renderToolbar(
-      { title: TITLE_MAP[EditorId.main] } as any,
-      EditorId.main
-    );
+    const toolbar = instance.renderToolbar({ title: MAIN_JS } as any, MAIN_JS);
 
     expect(toolbar).toMatchSnapshot();
-  });
-
-  it('does not render toolbar controls if only one editor exists', () => {
-    store.mosaicArrangement = EditorId.main;
-    const wrapper = shallow(<Editors appState={store} />);
-    const instance: Editors = wrapper.instance() as any;
-    const toolbar = instance.renderToolbar(
-      { title: TITLE_MAP[EditorId.main] } as any,
-      EditorId.main
-    );
-
-    expect(toolbar).toMatchSnapshot();
-  });
-
-  it('componentWillUnmount() unsubscribes the layout reaction', () => {
-    const wrapper = shallow(<Editors appState={store} />);
-    const instance: Editors = wrapper.instance() as any;
-    (instance as any).disposeLayoutAutorun = jest.fn();
-
-    instance.componentWillUnmount();
-
-    expect(instance.disposeLayoutAutorun).toHaveBeenCalledTimes(1);
   });
 
   it('onChange() updates the mosaic arrangement in the appState', () => {
-    const wrapper = shallow(<Editors appState={store} />);
+    const wrapper = shallow(<Editors appState={store as any} />);
     const instance: Editors = wrapper.instance() as any;
 
-    instance.onChange({ testArrangement: true } as any);
-
-    expect(store.mosaicArrangement).toEqual({ testArrangement: true });
+    const arrangement = { testArrangement: true };
+    instance.onChange(arrangement as any);
+    expect(editorMosaic.mosaic).toStrictEqual(arrangement);
   });
 
   describe('IPC commands', () => {
-    it('handles an MONACO_EXECUTE_COMMAND command', () => {
-      shallow(<Editors appState={store} />);
+    it('handles a MONACO_EXECUTE_COMMAND command', () => {
+      shallow(<Editors appState={store as any} />);
 
-      const mockAction = {
-        isSupported: jest.fn(() => true),
-        run: jest.fn()
-      };
-      const mockEditor = {
-        getAction: jest.fn(() => mockAction)
-      };
+      const editor = new MonacoEditorMock();
+      const action = editor.getAction();
+      action.isSupported.mockReturnValue(true);
 
-      (getFocusedEditor as any).mockReturnValueOnce(mockEditor);
+      editorMosaic.focusedEditor = jest.fn().mockReturnValue(editor);
 
       ipcRendererManager.emit(IpcEvents.MONACO_EXECUTE_COMMAND, null, 'hello');
-      expect(mockEditor.getAction).toHaveBeenCalled();
-      expect(mockAction.isSupported).toHaveBeenCalled();
-      expect(mockAction.run).toHaveBeenCalled();
+      expect(editor.getAction).toHaveBeenCalled();
+      expect(action.isSupported).toHaveBeenCalled();
+      expect(action.run).toHaveBeenCalled();
     });
 
-    it('handles an FS_NEW_FIDDLE command', (done) => {
-      shallow(<Editors appState={store} />);
+    const fakeValues = { [MAIN_JS]: 'hi' } as const;
 
-      ipcRendererManager.emit(IpcEvents.FS_NEW_FIDDLE, null);
-      process.nextTick(() => {
-        expect(window.ElectronFiddle.app.replaceFiddle).toHaveBeenCalled();
-        done();
+    it('handles an FS_NEW_FIDDLE command', async () => {
+      let resolve: any;
+      const replacePromise = new Promise((r) => {
+        resolve = r;
       });
+
+      // setup
+      const getTemplateSpy = jest
+        .spyOn(content, 'getTemplate')
+        .mockImplementation(() => Promise.resolve(fakeValues));
+      const replaceFiddleSpy = jest
+        .spyOn(app, 'replaceFiddle')
+        .mockImplementation(() => resolve());
+
+      // invoke the call
+      ipcRendererManager.emit(IpcEvents.FS_NEW_FIDDLE, null);
+      await replacePromise;
+
+      // check the results
+      expect(getTemplateSpy).toHaveBeenCalledTimes(1);
+      expect(replaceFiddleSpy).toHaveBeenCalledTimes(1);
+
+      // cleanup
+      getTemplateSpy.mockRestore();
+      replaceFiddleSpy.mockRestore();
+    });
+
+    describe('SELECT_ALL_IN_EDITOR handler', () => {
+      it('selects all in the focused editor', async () => {
+        shallow(<Editors appState={store as any} />);
+
+        const range = 'range';
+        const editor = new MonacoEditorMock();
+        const model = editor.getModel();
+        model.getFullModelRange.mockReturnValue(range);
+        editorMosaic.focusedEditor = jest.fn().mockReturnValue(editor);
+
+        ipcRendererManager.emit(IpcEvents.SELECT_ALL_IN_EDITOR, null);
+
+        await process.nextTick;
+        expect(editor.setSelection).toHaveBeenCalledWith('range');
+      });
+
+      it('does not change selection if the selected editor has no model', async () => {
+        shallow(<Editors appState={store as any} />);
+
+        const editor = new MonacoEditorMock();
+        delete (editor as any).model;
+        editorMosaic.focusedEditor = jest.fn().mockReturnValue(editor);
+
+        ipcRendererManager.emit(IpcEvents.SELECT_ALL_IN_EDITOR, null);
+
+        await process.nextTick;
+        expect(editor.getModel).toHaveBeenCalledTimes(1);
+        expect(editor.setSelection).not.toHaveBeenCalled();
+      });
+
+      it('does not crash if there is no selected editor', () => {
+        shallow(<Editors appState={store as any} />);
+        editorMosaic.focusedEditor = jest.fn().mockReturnValue(null);
+        ipcRendererManager.emit(IpcEvents.SELECT_ALL_IN_EDITOR, null);
+      });
+    });
+
+    it('handles an FS_NEW_TEST command', async () => {
+      // setup
+      const getTestTemplateSpy = jest
+        .spyOn(content, 'getTestTemplate')
+        .mockImplementation(() => Promise.resolve(fakeValues));
+      let replaceResolve: any;
+      const replacePromise = new Promise((r) => {
+        replaceResolve = r;
+      });
+      const replaceFiddleSpy = jest
+        .spyOn(app, 'replaceFiddle')
+        .mockImplementation(() => replaceResolve());
+
+      // invoke the call
+      ipcRendererManager.emit(IpcEvents.FS_NEW_TEST);
+      await replacePromise;
+
+      // check the results
+      expect(getTestTemplateSpy).toHaveBeenCalled();
+      expect(replaceFiddleSpy).toHaveBeenCalled();
+
+      // cleanup
+      getTestTemplateSpy.mockRestore();
+      replaceFiddleSpy.mockRestore();
+    });
+    it('handles a SELECT_ALL_IN_EDITOR command', async () => {
+      shallow(<Editors appState={store as any} />);
+
+      const range = 'range';
+      const editor = new MonacoEditorMock();
+      editor.getModel().getFullModelRange.mockReturnValue(range);
+      editorMosaic.focusedEditor = jest.fn().mockReturnValue(editor);
+
+      ipcRendererManager.emit(IpcEvents.SELECT_ALL_IN_EDITOR, null);
+      await process.nextTick;
+
+      expect(editor.setSelection).toHaveBeenCalledWith(range);
     });
 
     it('handles the monaco editor option commands', () => {
-      shallow(<Editors appState={store} />);
+      const id = MAIN_JS;
+      const editor = new MonacoEditorMock();
+      editorMosaic.addEditor(id, editor as any);
 
+      shallow(<Editors appState={store as any} />);
       ipcRendererManager.emit(IpcEvents.MONACO_TOGGLE_OPTION, null, 'wordWrap');
-
-      expect(
-        window.ElectronFiddle.editors.html!.updateOptions
-      ).toHaveBeenCalled();
-      expect(
-        window.ElectronFiddle.editors.renderer!.updateOptions
-      ).toHaveBeenCalled();
-      expect(
-        window.ElectronFiddle.editors.main!.updateOptions
-      ).toHaveBeenCalled();
+      expect(editor.updateOptions).toHaveBeenCalled();
     });
   });
 
-  describe('loadMonaco()', () => {
-    it('loads Monaco', (done) => {
-      window.ElectronFiddle.app.monaco = null;
+  describe('setFocused()', () => {
+    it('sets the "focused" property', () => {
+      const wrapper = shallow(<Editors appState={store as any} />);
+      const instance: Editors = wrapper.instance() as any;
+      const spy = jest.spyOn(instance, 'setState');
 
-      shallow(<Editors appState={store} />);
-
-      process.nextTick(() => {
-        expect(window.ElectronFiddle.app.monaco).toEqual({ monaco: true });
-        done();
-      });
-    });
-  });
-
-  describe('disposeLayoutAutorun()', () => {
-    it('automatically updates the layout when the mosaic arrangement changes', () => {
-      class MockStore {
-        @observable public mosaicArrangement: any = {};
-      }
-
-      const mockStore = new MockStore();
-
-      shallow(<Editors appState={mockStore as any} />);
-
-      mockStore.mosaicArrangement = EditorId.main;
-
-      expect(updateEditorLayout).toHaveBeenCalledTimes(1);
+      const id = MAIN_JS;
+      instance.setFocused(id);
+      expect(spy).toHaveBeenCalledWith({ focused: id });
     });
   });
 });

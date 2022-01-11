@@ -1,13 +1,13 @@
 import * as os from 'os';
 
-let username: string = '';
+let username = '';
 
 /**
- * Returns the curren username
+ * Returns the current username
  *
  * @export
  * @returns {string}
  */
 export function getUsername(): string {
-  return username = username || os.userInfo().username;
+  return (username = username || os.userInfo().username);
 }

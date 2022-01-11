@@ -1,139 +1,86 @@
-import { EditorValues } from '../interfaces';
 import { exec } from '../utils/exec';
 
-const { builtinModules } =  require('module');
+export type IPackageManager = 'npm' | 'yarn';
 
-export interface NpmOperationOptions {
+export interface PMOperationOptions {
   dir: string;
+  packageManager: IPackageManager;
 }
 
-export let isInstalled: boolean | null = null;
-
-/* add other modules to automatically ignore here */
-/* perhaps we can expose this to the settings module?*/
-const ignoredModules: Array<string> = [
-  'electron',
-  'original-fs',
-  ...builtinModules
-];
-
-/* regular expression to both match and extract module names */
-const requiregx = /^.*require\(['"](.*?)['"]\)/gm;
-
-
-/*
- Quick and dirty filter functions for filtering module names
-*/
-const isIgnored = (str: string): boolean => ignoredModules.includes(str);
-const isLocalModule = (str: string): boolean => (/^[,/~\.]/.test(str));
-const isUnique = (item: any, idx: number, arr: Array<any>): boolean => {
-  return arr.lastIndexOf(item) === idx;
-};
-
+let isNpmInstalled: boolean | null = null;
+let isYarnInstalled: boolean | null = null;
 
 /**
- * Checks if npm is installed by checking if a binary
+ * Checks if package manager is installed by checking if a binary
  * with that name can be found.
  */
-export async function getIsNpmInstalled(ignoreCache?: boolean): Promise<boolean> {
-  if (isInstalled !== null && !ignoreCache) return isInstalled;
+export async function getIsPackageManagerInstalled(
+  packageManager: IPackageManager,
+  ignoreCache?: boolean,
+): Promise<boolean> {
+  if (packageManager === 'npm' && isNpmInstalled !== null && !ignoreCache)
+    return isNpmInstalled;
+  if (packageManager === 'yarn' && isYarnInstalled !== null && !ignoreCache)
+    return isYarnInstalled;
 
-  const command = process.platform === 'win32'
-    ? 'where.exe npm'
-    : 'which npm';
+  const command =
+    process.platform === 'win32'
+      ? `where.exe ${packageManager}`
+      : `which ${packageManager}`;
 
   try {
     await exec(process.cwd(), command);
-    return isInstalled = true;
-  } catch (error) {
-    console.warn(`getIsNpmInstalled: "${command}" failed.`, error);
-    return isInstalled = false;
-  }
-}
-
-/**
- * Finds npm modules in editor values, returning an array of modules.
- *
- * @param {EditorValues} values
- * @returns {Array<string>}
- */
-export function findModulesInEditors(values: EditorValues) {
-  const files = [ values.main, values.renderer ];
-  const modules = files.reduce(
-    (agg, file) => [
-      ...agg,
-      ...findModules(file)
-    ],
-    []
-  );
-
-  console.log('Modules Found:', modules);
-
-  return modules;
-}
-
-/**
- * Uses a simple regex to find `require()` statements in a string.
- * Tries to exclude electron and Node built-ins as well as file-path
- * references. Also will try to install base packages of modules
- * that have a slash in them, for example: `lodash/fp` as the actual package
- * is just `lodash`.
- *
- * However, it WILL try to add packages that are part of a huge
- * monorepo that are named `@<group>/<package>`
- *
- * @param {string} input
- * @returns {Array<string>}
- */
-export function findModules(input: string): Array<string> {
-  /* container definitions */
-  const modules: Array<string> = [];
-  let match: RegExpMatchArray | null;
-
-  /* grab all global require matches in the text */
-  // tslint:disable-next-line:no-conditional-assignment
-  while (match = (requiregx.exec(input) || null)) {
-    // ensure commented-out requires aren't downloaded
-    if (!match[0].startsWith('//')) {
-      const mod = match[1];
-      modules.push(mod);
+    if (packageManager === 'npm') {
+      isNpmInstalled = true;
+    } else {
+      isYarnInstalled = true;
     }
+    return true;
+  } catch (error) {
+    console.warn(`getIsPackageManagerInstalled: "${command}" failed.`, error);
+    if (packageManager === 'npm') {
+      isNpmInstalled = false;
+    } else {
+      isYarnInstalled = false;
+    }
+    return false;
   }
-
-  /* map and reduce */
-  return modules
-    .map((mod) =>
-      mod.includes('/') && !mod.startsWith('@') ?
-      mod.split('/')[0] :
-      mod
-    )
-    .filter((m) => !isIgnored(m))
-    .filter((m) => !isLocalModule(m))
-    .filter(isUnique);
 }
 
 /**
  * Installs given modules to a given folder.
  *
- * @param {NpmOperationOptions} { dir }
+ * @param {PMOperationOptions} { dir, packageManager }
  * @param {...Array<string>} names
  * @returns {Promise<string>}
  */
-export async function installModules({ dir }: NpmOperationOptions, ...names: Array<string>): Promise<string> {
-  const nameArgs = names.length > 0
-    ? [ '-S', ...names ]
-    : ['--dev --prod'];
+export async function addModules(
+  { dir, packageManager }: PMOperationOptions,
+  ...names: Array<string>
+): Promise<string> {
+  let nameArgs: Array<string> = [];
 
-  return exec(dir, [ `npm install` ].concat(nameArgs).join(' '));
+  if (packageManager === 'npm') {
+    nameArgs = names.length > 0 ? ['-S', ...names] : ['--also=dev --prod'];
+  } else {
+    nameArgs = [...names];
+  }
+
+  const installCommand = packageManager === 'npm' ? 'npm install' : 'yarn add';
+
+  return exec(dir, [installCommand].concat(nameArgs).join(' '));
 }
 
 /**
- * Execute an "npm run" command
+ * Execute an "{packageManager} run" command
  *
- * @param {NpmOperationOptions} { dir }
+ * @param {PMOperationOptions} { dir, packageManager }
  * @param {string} command
  * @returns {Promise<string>}
  */
-export function npmRun({ dir }: NpmOperationOptions, command: string): Promise<string> {
-  return exec(dir, `npm run ${command}`);
+export function packageRun(
+  { dir, packageManager }: PMOperationOptions,
+  command: string,
+): Promise<string> {
+  return exec(dir, `${packageManager} run ${command}`);
 }

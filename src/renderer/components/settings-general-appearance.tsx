@@ -1,13 +1,20 @@
-import { Button, Callout, FormGroup, MenuItem } from '@blueprintjs/core';
-import { ItemPredicate, ItemRenderer, Select } from '@blueprintjs/select';
-import { shell } from 'electron';
-import * as fsType from 'fs-extra';
-import { observer } from 'mobx-react';
-import * as path from 'path';
+import {
+  Button,
+  Callout,
+  Checkbox,
+  FormGroup,
+  MenuItem,
+} from '@blueprintjs/core';
 import * as React from 'react';
+import * as fs from 'fs-extra';
+import * as namor from 'namor';
+import * as path from 'path';
+import { ItemPredicate, ItemRenderer, Select } from '@blueprintjs/select';
+import { observer } from 'mobx-react';
+import { reaction } from 'mobx';
+import { shell } from 'electron';
 
 import { highlightText } from '../../utils/highlight-text';
-import { fancyImport } from '../../utils/import';
 import { AppState } from '../state';
 import { getAvailableThemes, getTheme, THEMES_PATH } from '../themes';
 import { LoadedFiddleTheme } from '../themes-defaults';
@@ -22,10 +29,12 @@ const ThemeSelect = Select.ofType<LoadedFiddleTheme>();
  * @param {RunnableVersion} { version }
  * @returns
  */
-export const filterItem: ItemPredicate<LoadedFiddleTheme> = (query, { name }) => {
+export const filterItem: ItemPredicate<LoadedFiddleTheme> = (
+  query,
+  { name },
+) => {
   return name.toLowerCase().includes(query.toLowerCase());
 };
-
 
 /**
  * Helper method: Returns the <Select /> <MenuItem /> for Electron
@@ -35,7 +44,10 @@ export const filterItem: ItemPredicate<LoadedFiddleTheme> = (query, { name }) =>
  * @param {IItemRendererProps} { handleClick, modifiers, query }
  * @returns
  */
-export const renderItem: ItemRenderer<LoadedFiddleTheme> = (item, { handleClick, modifiers, query }) => {
+export const renderItem: ItemRenderer<LoadedFiddleTheme> = (
+  item,
+  { handleClick, modifiers, query },
+) => {
   if (!modifiers.matchesPredicate) {
     return null;
   }
@@ -47,16 +59,17 @@ export const renderItem: ItemRenderer<LoadedFiddleTheme> = (item, { handleClick,
       text={highlightText(item.name, query)}
       key={item.name}
       onClick={handleClick}
-      icon='media'
+      icon="media"
     />
   );
 };
 
-export interface AppearanceSettingsProps {
+interface AppearanceSettingsProps {
   appState: AppState;
+  toggleHasPopoverOpen: () => void;
 }
 
-export interface AppearanceSettingsState {
+interface AppearanceSettingsState {
   themes: Array<LoadedFiddleTheme>;
   selectedTheme?: LoadedFiddleTheme;
 }
@@ -69,7 +82,8 @@ export interface AppearanceSettingsState {
  */
 @observer
 export class AppearanceSettings extends React.Component<
-  AppearanceSettingsProps, AppearanceSettingsState
+  AppearanceSettingsProps,
+  AppearanceSettingsState
 > {
   public constructor(props: AppearanceSettingsProps) {
     super(props);
@@ -77,17 +91,27 @@ export class AppearanceSettings extends React.Component<
     this.handleChange = this.handleChange.bind(this);
     this.openThemeFolder = this.openThemeFolder.bind(this);
     this.handleAddTheme = this.handleAddTheme.bind(this);
+    this.handleThemeSource = this.handleThemeSource.bind(this);
 
     this.state = {
-      themes: []
+      themes: [],
     };
 
     getAvailableThemes().then((themes) => {
       const { theme } = this.props.appState;
-      const selectedTheme = theme &&
-        themes.find(({ file }) => file === theme) || themes[0];
+      const selectedTheme =
+        (theme && themes.find(({ file }) => file === theme)) || themes[0];
 
       this.setState({ themes, selectedTheme });
+
+      // set up mobx so that changes from system sync are reflected in picker
+      reaction(
+        () => this.props.appState.theme,
+        async () => {
+          const selectedTheme = await getTheme(this.props.appState.theme);
+          this.setState({ selectedTheme });
+        },
+      );
     });
 
     this.createNewThemeFromCurrent = this.createNewThemeFromCurrent.bind(this);
@@ -113,24 +137,26 @@ export class AppearanceSettings extends React.Component<
    */
   public async createNewThemeFromCurrent(): Promise<boolean> {
     const { appState } = this.props;
-    const fs = await fancyImport<typeof fsType>('fs-extra');
     const theme = await getTheme(appState.theme);
 
     try {
-      const namor = await fancyImport<any>('namor');
       const name = namor.generate({ words: 2, numbers: 0 });
       const themePath = path.join(THEMES_PATH, `${name}.json`);
 
-      await fs.outputJSON(themePath, {
-        ...theme,
-        name,
-        file: undefined,
-        css: undefined
-      }, { spaces: 2 });
+      await fs.outputJSON(
+        themePath,
+        {
+          ...theme,
+          name,
+          file: undefined,
+          css: undefined,
+        },
+        { spaces: 2 },
+      );
 
       shell.showItemInFolder(themePath);
 
-      this.setState({themes: await getAvailableThemes()});
+      this.setState({ themes: await getAvailableThemes() });
 
       return true;
     } catch (error) {
@@ -147,8 +173,6 @@ export class AppearanceSettings extends React.Component<
    * @returns {Promise<boolean>}
    */
   public async openThemeFolder(): Promise<boolean> {
-    const fs = await fancyImport<typeof fsType>('fs-extra');
-
     try {
       await fs.ensureDir(THEMES_PATH);
       await shell.showItemInFolder(THEMES_PATH);
@@ -161,51 +185,67 @@ export class AppearanceSettings extends React.Component<
 
   public render() {
     const { selectedTheme } = this.state;
-    const selectedName = selectedTheme && selectedTheme.name || 'Select a theme';
+    const { isUsingSystemTheme } = this.props.appState;
+    const selectedName =
+      (selectedTheme && selectedTheme.name) || 'Select a theme';
 
     return (
-      <div className='settings-appearance'>
+      <div className="settings-appearance">
         <h4>Appearance</h4>
+        <Checkbox
+          label="Sync theme with system setting"
+          checked={isUsingSystemTheme}
+          onChange={this.handleThemeSource}
+        />
         <FormGroup
-          label='Choose your theme'
+          label="Choose your theme"
+          disabled={isUsingSystemTheme}
           inline={true}
         >
           <ThemeSelect
             filterable={true}
+            disabled={isUsingSystemTheme}
             items={this.state.themes}
+            activeItem={selectedTheme}
             itemRenderer={renderItem}
             itemPredicate={filterItem}
             onItemSelect={this.handleChange}
-            noResults={<MenuItem disabled={true} text='No results.' />}
+            popoverProps={{
+              onClosed: () => this.props.toggleHasPopoverOpen(),
+            }}
+            noResults={<MenuItem disabled={true} text="No results." />}
           >
             <Button
+              id="open-theme-selector"
               text={selectedName}
-              icon='tint'
+              icon="tint"
+              onClick={() => this.props.toggleHasPopoverOpen()}
+              disabled={isUsingSystemTheme}
             />
           </ThemeSelect>
         </FormGroup>
-        <Callout>
+        <Callout hidden={isUsingSystemTheme}>
           <p>
-            To add themes, add JSON theme files to <a
-              id='open-theme-folder'
-              onClick={this.openThemeFolder}
-            >
+            To add themes, add JSON theme files to{' '}
+            <a id="open-theme-folder" onClick={this.openThemeFolder}>
               <code>{THEMES_PATH}</code>
-            </a>. The easiest way to get started is to clone one of the two existing
+            </a>
+            . The easiest way to get started is to clone one of the two existing
             themes and to add your own colors.
           </p>
           <p>
-            Additionally, if you wish to import a Monaco Editor theme, pick your JSON file and Fiddle will attempt to import it.
+            Additionally, if you wish to import a Monaco Editor theme, pick your
+            JSON file and Fiddle will attempt to import it.
           </p>
           <Button
             onClick={this.createNewThemeFromCurrent}
-            text='Create theme from current selection'
-            icon='duplicate'
+            text="Create theme from current selection"
+            icon="duplicate"
           />
           <Button
-            icon='document-open'
+            icon="document-open"
             onClick={this.handleAddTheme}
-            text='Add a Monaco Editor theme'
+            text="Add a Monaco Editor theme"
           />
         </Callout>
       </div>
@@ -219,4 +259,9 @@ export class AppearanceSettings extends React.Component<
     this.props.appState.toggleAddMonacoThemeDialog();
   }
 
+  public handleThemeSource(event: React.FormEvent<HTMLInputElement>): void {
+    const { appState } = this.props;
+    const { checked } = event.currentTarget;
+    appState.isUsingSystemTheme = checked;
+  }
 }

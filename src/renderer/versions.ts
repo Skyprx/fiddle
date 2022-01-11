@@ -1,13 +1,13 @@
 import semver from 'semver';
-import { RunnableVersion, Version, VersionSource, VersionState } from '../interfaces';
+import {
+  ElectronReleaseChannel,
+  RunnableVersion,
+  Version,
+  VersionSource,
+  VersionState,
+} from '../interfaces';
+import { getVersionState } from './binary';
 import { normalizeVersion } from '../utils/normalize-version';
-
-export const enum ElectronReleaseChannel {
-  stable = 'Stable',
-  beta = 'Beta',
-  nightly = 'Nightly',
-  unsupported = 'Unsupported'
-}
 
 /**
  * Returns a sensible default version string.
@@ -15,30 +15,19 @@ export const enum ElectronReleaseChannel {
  * @param {Array<RunnableVersion>} knownVersions
  * @returns {string}
  */
-export function getDefaultVersion(
-  knownVersions: Array<RunnableVersion> = []
-): string {
-  const ls = localStorage.getItem('version');
+export function getDefaultVersion(versions: RunnableVersion[]): string {
+  const key = localStorage.getItem('version');
+  if (key && versions.some(({ version }) => version === key)) return key;
 
-  if (ls && knownVersions && knownVersions.find(({ version }) => version === ls)) {
-    return ls;
-  }
+  // newest stable release
+  const latestStable = versions
+    .filter((ver) => !ver.version.includes('-')) // stable
+    .map((ver) => semver.parse(ver.version))
+    .sort((a, b) => -semver.compare(a!, b!))
+    .shift();
+  if (latestStable) return latestStable.version;
 
-  // Self-heal: Version not formated correctly
-  const normalized = ls && normalizeVersion(ls);
-  if (normalized) {
-    if (knownVersions && knownVersions.find(({ version }) => version === normalized)) {
-      return normalized;
-    }
-  }
-
-  // Alright, the first version?
-  const last = knownVersions && knownVersions[knownVersions.length - 1];
-  if (last) {
-    return last.version;
-  }
-
-  // Report error
+  // how do we not have a stable version listed?
   throw new Error('Corrupted version data');
 }
 
@@ -50,20 +39,16 @@ export function getDefaultVersion(
  * @returns {ElectronReleaseChannel}
  */
 export function getReleaseChannel(
-  input: Version | string
+  input: Version | string,
 ): ElectronReleaseChannel {
-  const tag = (typeof input === 'string') ? input : (input.version || '');
+  const tag = typeof input === 'string' ? input : input.version || '';
 
-  if (tag.includes('beta')) {
+  if (tag.includes('beta') || tag.includes('alpha')) {
     return ElectronReleaseChannel.beta;
   }
 
   if (tag.includes('nightly')) {
     return ElectronReleaseChannel.nightly;
-  }
-
-  if (tag.includes('unsupported')) {
-    return ElectronReleaseChannel.unsupported;
   }
 
   // Must be a stable version, right?
@@ -72,7 +57,7 @@ export function getReleaseChannel(
 
 export const enum VersionKeys {
   local = 'local-electron-versions',
-  known = 'known-electron-versions'
+  known = 'known-electron-versions',
 }
 
 /**
@@ -83,7 +68,8 @@ export const enum VersionKeys {
  * @returns {Array<Version>}
  */
 function getVersions(
-  key: VersionKeys, fallbackMethod: () => Array<Version>
+  key: VersionKeys,
+  fallbackMethod: () => Array<Version>,
 ): Array<Version> {
   const fromLs = window.localStorage.getItem(key);
 
@@ -94,7 +80,9 @@ function getVersions(
       if (!isExpectedFormat(result)) {
         // Known versions can just be downloaded again.
         if (key === VersionKeys.known) {
-          throw new Error(`Electron versions in LS does not match expected format`);
+          throw new Error(
+            `Electron versions in LS does not match expected format`,
+          );
         }
 
         // Local versions are a bit more tricky and might be in an old format (pre 0.5)
@@ -104,7 +92,9 @@ function getVersions(
 
       return result;
     } catch (error) {
-      console.warn(`Parsing local Electron versions failed, returning fallback method.`);
+      console.warn(
+        `Parsing local Electron versions failed, returning fallback method.`,
+      );
     }
   }
 
@@ -122,29 +112,25 @@ function saveVersions(key: VersionKeys, versions: Array<Version>) {
   window.localStorage.setItem(key, stringified);
 }
 
+export function makeRunnable(ver: Version): RunnableVersion {
+  const ret: RunnableVersion = {
+    ...ver,
+    version: normalizeVersion(ver.version),
+    source: Boolean(ver.localPath) ? VersionSource.local : VersionSource.remote,
+    state: VersionState.unknown,
+  };
+  ret.state = getVersionState(ver);
+  return ret;
+}
+
 /**
  * Return both known as well as local versions.
  *
  * @returns {Array<Version>}
  */
 export function getElectronVersions(): Array<RunnableVersion> {
-  const known: Array<RunnableVersion> = getKnownVersions().map((version) => {
-    return {
-      ...version,
-      source: VersionSource.remote,
-      state: VersionState.unknown
-    };
-  });
-
-  const local: Array<RunnableVersion> = getLocalVersions().map((version) => {
-    return {
-      ...version,
-      source: VersionSource.local,
-      state: VersionState.ready
-    };
-  });
-
-  return [...known, ...local];
+  const versions = [...getReleasedVersions(), ...getLocalVersions()];
+  return versions.map((ver) => makeRunnable(ver));
 }
 
 /**
@@ -163,6 +149,18 @@ export function addLocalVersion(input: Version): Array<Version> {
   saveLocalVersions(versions);
 
   return versions;
+}
+
+/**
+ * Get the Version (if any) that is located at localPath.
+ *
+ * @param {string} input
+ * @returns {Version | undefined}
+ */
+export function getLocalVersionForPath(
+  folderPath: string,
+): Version | undefined {
+  return getLocalVersions().find((v) => v.localPath === folderPath);
 }
 
 /**
@@ -199,8 +197,24 @@ export function saveLocalVersions(versions: Array<Version | RunnableVersion>) {
  *
  * @returns {Array<Version>}
  */
-export function getKnownVersions(): Array<Version> {
-  return getVersions(VersionKeys.known, () => require('../../static/releases.json'));
+function getReleasedVersions(): Array<Version> {
+  return getVersions(VersionKeys.known, () =>
+    require('../../static/releases.json'),
+  );
+}
+
+/**
+ * Helper to check if this version is from a released major branch.
+ *
+ * This way when we have a local version of Electron like '999.0.0'
+ * we'll know to not try & download 999-x-y.zip from GitHub :D
+ *
+ * @param {number} version - Electron major version number
+ * @returns {boolean} true if there are releases with that major version
+ */
+export function isReleasedMajor(major: number) {
+  const prefix = `${major}.`;
+  return getReleasedVersions().some((ver) => ver.version.startsWith(prefix));
 }
 
 /**
@@ -208,51 +222,31 @@ export function getKnownVersions(): Array<Version> {
  *
  * @param {Array<Version>} versions
  */
-export function saveKnownVersions(versions: Array<Version>) {
+function saveKnownVersions(versions: Array<Version>) {
   return saveVersions(VersionKeys.known, versions);
 }
 
 /**
- * Tries to refresh our known versions and returns whatever we have
- * saved after.
+ * Fetch a list of released versions from electronjs.org.
  *
- * @export
- * @returns {Promise<Array<RunnableVersion>>}
+ * @returns {Promise<Version[]>}
  */
-export async function getUpdatedElectronVersions(
-): Promise<Array<RunnableVersion>> {
-  try {
-    await fetchVersions();
-  } catch (error) {
-    console.warn(`Versions: Failed to fetch versions`, { error });
-  }
+export async function fetchVersions(): Promise<Version[]> {
+  const url = 'https://releases.electronjs.org/releases.json';
+  const response = await window.fetch(url);
+  const data = (await response.json()) as { version: string }[];
 
-  return getElectronVersions();
-}
+  const versions: Version[] = data
+    // Don't support anything older than 0.30 (Aug 2015).
+    // The oldest version known to releases.json.org is 0.20,
+    // Pre-0.24.0 versions were technically 'atom-shell' and cannot
+    // be downloaded with @electron/get.
+    .filter((ver) => !ver.version.startsWith('0.2'))
+    .map(({ version }) => ({ version }));
 
-/**
- * Fetch the latest known versions directly from npm.
- *
- * @returns {Promise<Array<Version>>}
- */
-export async function fetchVersions() {
-  const response = await window.fetch('https://unpkg.com/electron-releases/lite.json');
-  const data = await response.json();
-
-  // pre-0.24.0 versions were technically 'atom-shell' and cannot
-  // be downloaded with @electron/get
-  const MIN_DOWNLOAD_VERSION = '0.24.0';
-
-  const output = data
-    .map(({ version }: any) => ({ version }))
-    .filter(({ version }: any) => semver.gte(version, MIN_DOWNLOAD_VERSION));
-
-  if (output?.length > 0 && isExpectedFormat(output)) {
-    console.log(`Fetched new Electron versions (Count: ${output.length})`);
-    saveKnownVersions(output);
-  }
-
-  return output;
+  console.log(`Fetched ${versions.length} new Electron versions`);
+  if (versions.length > 0) saveKnownVersions(versions);
+  return versions;
 }
 
 /**
@@ -261,7 +255,7 @@ export async function fetchVersions() {
  * @param {Array<any>} input
  * @returns {boolean}
  */
-export function isExpectedFormat(input: Array<any>): boolean {
+function isExpectedFormat(input: Array<any>): boolean {
   return input.every((entry) => !!entry.version);
 }
 
@@ -271,7 +265,7 @@ export function isExpectedFormat(input: Array<any>): boolean {
  * @param {Array<any>} input
  * @returns {Array<Version>}
  */
-export function migrateVersions(input: Array<any> = []): Array<Version> {
+function migrateVersions(input: Array<any>): Array<Version> {
   return input
     .filter((item) => !!item)
     .map((item) => {
@@ -282,14 +276,25 @@ export function migrateVersions(input: Array<any> = []): Array<Version> {
       return {
         version: tag_name,
         name,
-        localPath: url
+        localPath: url,
       };
     })
     .filter((item) => !!item) as Array<Version>;
 }
 
-export function isElectronVersion(
-  input: Version | RunnableVersion
+function isElectronVersion(
+  input: Version | RunnableVersion,
 ): input is RunnableVersion {
   return (input as RunnableVersion).source !== undefined;
+}
+
+export function getOldestSupportedMajor(): number | undefined {
+  const NUM_BRANCHES = parseInt(process.env.NUM_STABLE_BRANCHES || '') || 4;
+
+  return getReleasedVersions()
+    .filter((ver) => ver.version.endsWith('.0.0'))
+    .map((ver) => Number.parseInt(ver.version))
+    .sort((a, b) => a - b)
+    .slice(-NUM_BRANCHES)
+    .shift();
 }

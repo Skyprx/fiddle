@@ -6,23 +6,14 @@ jobs:
   autoupdate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v2.4.0
     - name: Fetch git branches
       run: git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
-    - uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2.5.1
       with:
         node-version: '12.x'
-    - name: Get npm cache directory
-      id: npm-cache
-      run: |
-        echo "::set-output name=dir::$(npm config get cache)"
-    - uses: actions/cache@v1
-      with:
-        path: ${{ steps.npm-cache.outputs.dir }}
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-    - run: npm ci
+        cache: yarn
+    - run: yarn --network-timeout 100000
     - name: Switch to release update branch
       run: |
         if git branch --remotes | grep -q origin/update-releases; then
@@ -31,7 +22,7 @@ jobs:
           git checkout -b update-releases
         fi
     - name: Update Releases JSON
-      run: npm run electron-releases
+      run: yarn electron-releases
     - name: Commit Changes to Releases JSON
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,7 +31,7 @@ jobs:
         chmod 600 ~/.netrc
         git add static/releases.json tests/fixtures/releases-metadata.json
         if test -n "$(git status -s)"; then
-          git config user.name "$GITHUB_ACTOR"
+          git config user.name "Electron Bot"
           git config user.email "electron-bot@users.noreply.github.com"
           git diff --cached
           git commit -m "build: update Electron releases JSON"

@@ -1,6 +1,7 @@
 # <img src="https://user-images.githubusercontent.com/378023/49785546-4b7f7000-fd64-11e8-8033-a52c73a07fbf.png" width="60px" align="center" alt="Electron Fiddle icon"> Electron Fiddle
 
-[![Build Status](https://travis-ci.org/electron/fiddle.svg?branch=master)](https://travis-ci.org/electron/fiddle) [![Coverage Status](https://coveralls.io/repos/github/electron/fiddle/badge.svg?branch=master)](https://coveralls.io/github/electron/fiddle?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/electron/fiddle/badge.svg?branch=master)](https://coveralls.io/github/electron/fiddle?branch=master)
+[![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.com/invite/electron)
 
 Electron Fiddle lets you create and play with small Electron experiments. It
 greets you with a quick-start template after opening – change a few things,
@@ -9,15 +10,12 @@ save your Fiddle either as a GitHub Gist or to a local folder. Once published
 on GitHub, anyone can quickly try your Fiddle out by just entering it in the
 address bar.
 
-<h3 align="center">
-  <a href="https://github.com/electron/fiddle/releases/latest">
-  Download Electron Fiddle for macOS, Windows, and Linux
-  </a>
-</h3>
+**[Download Fiddle now!](https://www.electronjs.org/fiddle)**
 
-<img src="https://user-images.githubusercontent.com/1426799/52155868-d3357c80-2639-11e9-9496-fa97b1dc7897.jpg" width="880px" alt="Electron Fiddle screenshot">
 
-# Features
+<img src="./assets/screenshots/fiddle-screenshot.png" width="880px" alt="Electron Fiddle screenshot">
+
+## Features
 
 ### Explore Electron
 

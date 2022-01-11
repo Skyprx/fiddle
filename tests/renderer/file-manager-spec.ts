@@ -1,39 +1,40 @@
-import { Files } from '../../src/interfaces';
+import * as fs from 'fs-extra';
+
+import { AppState } from '../../src/renderer/state';
+import { Files, PACKAGE_NAME, SetFiddleOptions } from '../../src/interfaces';
 import { IpcEvents } from '../../src/ipc-events';
 import { FileManager } from '../../src/renderer/file-manager';
 import { ipcRendererManager } from '../../src/renderer/ipc';
-import { RENDERER_JS_NAME } from '../../src/shared-constants';
-import { ElectronFiddleMock } from '../mocks/electron-fiddle';
+import { readFiddle } from '../../src/utils/read-fiddle';
+import { isSupportedFile } from '../../src/utils/editor-utils';
+
+import { AppMock, createEditorValues } from '../mocks/mocks';
 
 jest.mock('fs-extra');
 jest.mock('tmp', () => ({
   setGracefulCleanup: jest.fn(),
   dirSync: jest.fn(() => ({
-    name: '/fake/temp'
-  }))
-}));
-jest.mock('../../src/renderer/templates', () => ({
-  getTemplateValues: () => ({
-    html: '',
-    main: '',
-    renderer: ''
-  })
+    name: '/fake/temp',
+  })),
 }));
 
-jest.mock('../../src/utils/import', () => ({
-  fancyImport: async (p: string) => require(p)
+jest.mock('../../src/utils/read-fiddle', () => ({
+  readFiddle: jest.fn(),
 }));
 
 describe('FileManager', () => {
+  const editorValues = createEditorValues();
+  let app: AppMock;
   let fm: FileManager;
 
   beforeEach(() => {
-    window.ElectronFiddle = new ElectronFiddleMock() as any;
     ipcRendererManager.send = jest.fn();
+    (readFiddle as jest.Mock).mockReturnValue(Promise.resolve(editorValues));
 
-    fm = new FileManager({
-      setGenericDialogOptions: jest.fn()
-    } as any);
+    // create a real FileManager and insert it into our mocks
+    ({ app } = (window as any).ElectronFiddle);
+    fm = new FileManager((app.state as unknown) as AppState);
+    app.fileManager = fm as any;
   });
 
   afterEach(() => {
@@ -41,28 +42,25 @@ describe('FileManager', () => {
   });
 
   describe('openFiddle()', () => {
-    it('opens a local fiddle', async () => {
-      const fakePath = '/fake/path';
-      await fm.openFiddle(fakePath);
+    const filePath = '/fake/path';
 
-      expect(window.ElectronFiddle.app.replaceFiddle).toHaveBeenCalledWith({}, {filePath: fakePath});
+    it('opens a local fiddle', async () => {
+      const opts: SetFiddleOptions = { filePath };
+      await fm.openFiddle(filePath);
+      expect(app.replaceFiddle).toHaveBeenCalledWith(editorValues, opts);
     });
 
-    it('writes empty strings if readFile throws an error', async () => {
-      const fs = require('fs-extra');
-      (fs.readFile as jest.Mock).mockImplementation(() => {
-        throw new Error('bwap');
-      });
-      const fakePath = '/fake/path';
-      await fm.openFiddle(fakePath);
+    it('opens a fiddle with supported files', async () => {
+      const file = 'file.js';
+      expect(isSupportedFile(file));
+      const content = '// content';
+      const values = { ...editorValues, [file]: content };
+      (readFiddle as jest.Mock).mockResolvedValue(values);
+      app.remoteLoader.confirmAddFile.mockResolvedValue(true);
 
-      expect(window.ElectronFiddle.app.replaceFiddle).toHaveBeenCalledWith({
-        html: '',
-        renderer: '',
-        preload: '',
-        main: '',
-        css: ''
-      }, {filePath: fakePath});
+      await fm.openFiddle(filePath);
+      expect(readFiddle).toHaveBeenCalledWith(filePath);
+      expect(app.replaceFiddle).toHaveBeenCalledWith(values, { filePath });
     });
 
     it('runs it on IPC event', () => {
@@ -73,54 +71,62 @@ describe('FileManager', () => {
 
     it('does not do anything with incorrect inputs', async () => {
       await fm.openFiddle({} as any);
-      expect(window.ElectronFiddle.app.setEditorValues).toHaveBeenCalledTimes(0);
+      expect(app.replaceFiddle).not.toHaveBeenCalled();
     });
 
     it('does not do anything if cancelled', async () => {
-      (window.ElectronFiddle.app.setEditorValues as jest.Mock).mockResolvedValueOnce(false);
+      (app.replaceFiddle as jest.Mock).mockResolvedValueOnce(false);
       await fm.openFiddle('/fake/path');
     });
   });
 
   describe('saveFiddle()', () => {
     it('saves all non-empty files in Fiddle', async () => {
-      const fs = require('fs-extra');
+      const values = { ...editorValues };
+      jest.spyOn(app, 'getEditorValues').mockReturnValue(values);
 
       await fm.saveFiddle('/fake/path');
+      expect(fs.outputFile).toHaveBeenCalledTimes(Object.keys(values).length);
+    });
 
-      expect(fs.outputFile).toHaveBeenCalledTimes(5);
+    it('saves a fiddle with supported files', async () => {
+      const file = 'file.js';
+      const content = '// hi';
+      const values = { ...editorValues, [file]: content };
+      jest.spyOn(app, 'getEditorValues').mockReturnValue(values);
+
+      await fm.saveFiddle('/fake/path');
+      expect(fs.outputFile).toHaveBeenCalledTimes(Object.keys(values).length);
     });
 
     it('removes a file that is newly empty', async () => {
-      const fs = require('fs-extra');
-
       await fm.saveFiddle('/fake/path');
 
       expect(fs.remove).toHaveBeenCalledTimes(1);
     });
 
     it('handles an error (output)', async () => {
-      const fs = require('fs-extra');
       (fs.outputFile as jest.Mock).mockImplementation(() => {
         throw new Error('bwap');
       });
 
       await fm.saveFiddle('/fake/path');
 
-      expect(fs.outputFile).toHaveBeenCalledTimes(5);
-      expect(ipcRendererManager.send).toHaveBeenCalledTimes(5);
+      const n = Object.keys(editorValues).length;
+      // ipc calls for each editor value + one for SET_SHOW_ME_TEMPLATE
+      const ipcCalls = n + 1;
+      expect(fs.outputFile).toHaveBeenCalledTimes(n);
+      expect(ipcRendererManager.send).toHaveBeenCalledTimes(ipcCalls);
     });
 
     it('handles an error (remove)', async () => {
-      const fs = require('fs-extra');
       (fs.remove as jest.Mock).mockImplementation(() => {
         throw new Error('bwap');
       });
-
       await fm.saveFiddle('/fake/path');
 
       expect(fs.remove).toHaveBeenCalledTimes(1);
-      expect(ipcRendererManager.send).toHaveBeenCalledTimes(1);
+      expect(ipcRendererManager.send).toHaveBeenCalledTimes(2);
     });
 
     it('runs saveFiddle (normal) on IPC event', () => {
@@ -138,31 +144,35 @@ describe('FileManager', () => {
     it('asks for a path via IPC if none can  be found', async () => {
       await fm.saveFiddle();
 
-      expect(ipcRendererManager.send).toHaveBeenCalledWith(
-        IpcEvents.FS_SAVE_FIDDLE_DIALOG
+      expect(ipcRendererManager.send).toHaveBeenCalledWith<any>(
+        IpcEvents.FS_SAVE_FIDDLE_DIALOG,
       );
     });
   });
 
   describe('saveToTemp()', () => {
     it('saves as a local fiddle', async () => {
-      const fs = require('fs-extra');
       const tmp = require('tmp');
 
-      await fm.saveToTemp({ includeDependencies: false, includeElectron: false });
+      await fm.saveToTemp({
+        includeDependencies: false,
+        includeElectron: false,
+      });
 
       expect(fs.outputFile).toHaveBeenCalledTimes(6);
       expect(tmp.setGracefulCleanup).toHaveBeenCalled();
     });
 
     it('throws an error', async () => {
-      const fs = require('fs-extra');
       (fs.outputFile as jest.Mock).mockImplementation(() => {
         throw new Error('bwap');
       });
 
       const testFn = async () => {
-        await fm.saveToTemp({ includeDependencies: false, includeElectron: false });
+        await fm.saveToTemp({
+          includeDependencies: false,
+          includeElectron: false,
+        });
       };
       let errored = false;
 
@@ -178,17 +188,11 @@ describe('FileManager', () => {
 
   describe('openTemplate()', () => {
     it('attempts to open a template', async () => {
-      await fm.openTemplate('test');
-      expect(window.ElectronFiddle.app.replaceFiddle).toHaveBeenCalledWith(
-        {
-          html: '',
-          main: '',
-          renderer: ''
-        },
-        {
-          templateName: 'test'
-        }
-      );
+      const templateName = 'test';
+      await fm.openTemplate(templateName);
+      expect(app.replaceFiddle).toHaveBeenCalledWith(editorValues, {
+        templateName,
+      });
     });
 
     it('runs openTemplate on IPC event', () => {
@@ -200,8 +204,7 @@ describe('FileManager', () => {
 
   describe('cleanup()', () => {
     it('attempts to remove a directory if it exists', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValueOnce(true);
+      (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
 
       const result = await fm.cleanup('/fake/dir');
 
@@ -210,8 +213,7 @@ describe('FileManager', () => {
     });
 
     it('does not attempt to remove a directory if it does not exists', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValueOnce(false);
+      (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
 
       const result = await fm.cleanup('/fake/dir');
 
@@ -220,9 +222,8 @@ describe('FileManager', () => {
     });
 
     it('handles an error', async () => {
-      const fs = require('fs-extra');
-      fs.existsSync.mockReturnValueOnce(true);
-      fs.remove.mockReturnValueOnce(Promise.reject('bwapbwap'));
+      (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+      (fs.remove as jest.Mock).mockReturnValueOnce(Promise.reject('bwapbwap'));
 
       const result = await fm.cleanup('/fake/dir');
 
@@ -231,21 +232,40 @@ describe('FileManager', () => {
   });
 
   describe('getFiles()', () => {
-    it('applies transforms', async () => {
-      const result = await fm.getFiles(undefined, async (files: Files) => {
-        files.set(RENDERER_JS_NAME, 'hi');
-        return files;
-      });
+    let expected: Files;
 
-      expect(result.get(RENDERER_JS_NAME)).toBe('hi');
+    beforeEach(() => {
+      app.getEditorValues.mockReturnValue(editorValues);
+      expected = new Map(Object.entries(editorValues));
+      expected.set(PACKAGE_NAME, undefined as any);
+    });
+
+    it(`always inserts ${PACKAGE_NAME}`, async () => {
+      expect(await fm.getFiles()).toStrictEqual(expected);
+    });
+
+    it('includes supported files', async () => {
+      const file = 'file.js';
+      const content = '// file.js';
+      expect(isSupportedFile(file));
+      const values = { ...editorValues, [file]: content };
+
+      app.getEditorValues.mockReturnValue(values);
+      expect((await fm.getFiles()).get(file)).toStrictEqual(content);
+    });
+
+    it('applies transforms', async () => {
+      const transformed: Files = new Map([['👉', '👈']]);
+      const transform = async () => transformed;
+      expect(await fm.getFiles(undefined, transform)).toBe(transformed);
     });
 
     it('handles transform error', async () => {
-      const result = await fm.getFiles(undefined, async () => {
-        throw new Error('bwap bwap');
-      });
-
-      expect(result.get(RENDERER_JS_NAME)).toBe('renderer-content');
+      const transform = async () => {
+        throw new Error('💩');
+      };
+      const result = await fm.getFiles(undefined, transform);
+      expect(result).toStrictEqual(expected);
     });
   });
 });

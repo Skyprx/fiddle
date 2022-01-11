@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 /**
- * Hightlights part of a string
+ * Highlights part of a string
  *
  * Inspired by https://github.com/palantir/blueprint/blob/develop/packages/docs-app/src/examples/select-examples/films.tsx
  * License: https://github.com/palantir/blueprint/blob/develop/LICENSE
@@ -12,7 +12,10 @@ import * as React from 'react';
  * @param {string} query
  * @returns
  */
-export function highlightText(text: string, query: string): Array<React.ReactNode | string> | null {
+export function highlightText(
+  text: string,
+  query: string,
+): Array<React.ReactNode | string> | null {
   let lastIndex = 0;
 
   const words = query
@@ -20,7 +23,7 @@ export function highlightText(text: string, query: string): Array<React.ReactNod
     .filter((word) => word.length > 0)
     .map((s) => s.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1'));
 
-  if (words.length === 0) return [ text ];
+  if (words.length === 0) return [text];
 
   const regexp = new RegExp(words.join('|'), 'gi');
   const tokens: Array<React.ReactNode> = [];

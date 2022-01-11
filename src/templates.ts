@@ -21,7 +21,6 @@ export const SHOW_ME_TEMPLATES: Templates = {
     Notification: 'Notification',
     PowerMonitor: 'PowerMonitor',
     PowerSaveBlocker: 'PowerSaveBlocker',
-    Remote: 'Remote',
     Screen: 'Screen',
     Session: 'Session',
     Shell: 'Shell',
@@ -29,6 +28,6 @@ export const SHOW_ME_TEMPLATES: Templates = {
     TouchBar: 'TouchBar',
     Tray: 'Tray',
     WebContents: 'WebContents',
-    WebFrame: 'WebFrame'
-  }
+    WebFrame: 'WebFrame',
+  },
 };

@@ -1,44 +1,61 @@
-/* tslint:disable */
+const path = require('path');
+const fs = require('fs');
+const packageJson = require('./package.json');
 
-const path = require('path')
-const fs = require('fs')
-const packageJson = require('./package.json')
+const { version } = packageJson;
+const iconDir = path.resolve(__dirname, 'assets', 'icons');
 
-const { version } = packageJson
-const iconDir = path.resolve(__dirname, 'assets', 'icons')
+if (process.env['WINDOWS_CODESIGN_FILE']) {
+  const certPath = path.join(__dirname, 'win-certificate.pfx');
+  const certExists = fs.existsSync(certPath);
+
+  if (certExists) {
+    process.env['WINDOWS_CODESIGN_FILE'] = certPath;
+  }
+}
+
+const commonLinuxConfig = {
+  icon: {
+    scalable: path.resolve(iconDir, 'fiddle.svg'),
+  },
+  mimeType: ['x-scheme-handler/electron-fiddle'],
+};
 
 const config = {
   hooks: {
-    generateAssets: require('./tools/generateAssets')
+    generateAssets: require('./tools/generateAssets'),
   },
   packagerConfig: {
     name: 'Electron Fiddle',
     executableName: 'electron-fiddle',
     asar: true,
     icon: path.resolve(__dirname, 'assets', 'icons', 'fiddle'),
-    // TODO: FIXME?
-    // ignore: [
-    //   /^\/\.vscode\//,
-    //   /^\/tools\//
-    // ],
     appBundleId: 'com.electron.fiddle',
+    usageDescription: {
+      Camera:
+        'Access is needed by certain built-in fiddles in addition to any custom fiddles that use the Camera',
+      Microphone:
+        'Access is needed by certain built-in fiddles in addition to any custom fiddles that use the Microphone',
+    },
     appCategoryType: 'public.app-category.developer-tools',
-    protocols: [{
-      name: 'Electron Fiddle Launch Protocol',
-      schemes: ['electron-fiddle']
-    }],
+    protocols: [
+      {
+        name: 'Electron Fiddle Launch Protocol',
+        schemes: ['electron-fiddle'],
+      },
+    ],
     win32metadata: {
       CompanyName: 'Electron Community',
       OriginalFilename: 'Electron Fiddle',
     },
     osxSign: {
       identity: 'Developer ID Application: Felix Rieseberg (LT94ZKYDCJ)',
-      'hardened-runtime': true,
+      hardenedRuntime: true,
       'gatekeeper-assess': false,
-      'entitlements': 'static/entitlements.plist',
+      entitlements: 'static/entitlements.plist',
       'entitlements-inherit': 'static/entitlements.plist',
-      'signature-flags': 'library'
-    }
+      'signature-flags': 'library',
+    },
   },
   makers: [
     {
@@ -50,41 +67,40 @@ const config = {
           : process.env.WINDOWS_CERTIFICATE_FILE;
 
         if (!certificateFile || !fs.existsSync(certificateFile)) {
-          console.warn(`Warning: Could not find certificate file at ${certificateFile}`)
+          console.warn(
+            `Warning: Could not find certificate file at ${certificateFile}`,
+          );
         }
 
         return {
           name: 'electron-fiddle',
           authors: 'Electron Community',
           exe: 'electron-fiddle.exe',
-          iconUrl: 'https://raw.githubusercontent.com/electron/fiddle/0119f0ce697f5ff7dec4fe51f17620c78cfd488b/assets/icons/fiddle.ico',
+          iconUrl:
+            'https://raw.githubusercontent.com/electron/fiddle/0119f0ce697f5ff7dec4fe51f17620c78cfd488b/assets/icons/fiddle.ico',
           loadingGif: './assets/loading.gif',
           noMsi: true,
-          remoteReleases: '',
-          setupExe: `electron-fiddle-${version}-${arch}-setup.exe`,
+          setupExe: `electron-fiddle-${version}-win32-${arch}-setup.exe`,
           setupIcon: path.resolve(iconDir, 'fiddle.ico'),
-          certificatePassword: process.env.WINDOWS_CERTIFICATE_PASSWORD,
-          certificateFile
-        }
-      }
+          certificateFile: process.env['WINDOWS_CODESIGN_FILE'],
+          certificatePassword: process.env['WINDOWS_CODESIGN_PASSWORD'],
+        };
+      },
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin']
+      platforms: ['darwin'],
     },
     {
       name: '@electron-forge/maker-deb',
       platforms: ['linux'],
-      config: {
-        icon: {
-          scalable: path.resolve(iconDir, 'fiddle.svg')
-        }
-      }
+      config: commonLinuxConfig,
     },
     {
       name: '@electron-forge/maker-rpm',
-      platforms: ['linux']
-    }
+      platforms: ['linux'],
+      config: commonLinuxConfig,
+    },
   ],
   publishers: [
     {
@@ -92,22 +108,17 @@ const config = {
       config: {
         repository: {
           owner: 'electron',
-          name: 'fiddle'
+          name: 'fiddle',
         },
         draft: true,
-        prerelease: false
-      }
-    }
-  ]
-}
+        prerelease: false,
+      },
+    },
+  ],
+};
 
 function notarizeMaybe() {
   if (process.platform !== 'darwin') {
-    return;
-  }
-
-  if (process.env.npm_lifecycle_event !== 'publish') {
-    console.log(`Not in "publish" mode, skipping notarization`);
     return;
   }
 
@@ -116,13 +127,10 @@ function notarizeMaybe() {
     return;
   }
 
-  if (!process.env.TRAVIS_TAG && !process.env.NOTARIZE_WITHOUT_TAG) {
-    console.log(`Not a tag, not notarizing`);
-    return;
-  }
-
   if (!process.env.APPLE_ID || !process.env.APPLE_ID_PASSWORD) {
-    console.warn('Should be notarizing, but environment variables APPLE_ID or APPLE_ID_PASSWORD are missing!');
+    console.warn(
+      'Should be notarizing, but environment variables APPLE_ID or APPLE_ID_PASSWORD are missing!',
+    );
     return;
   }
 
@@ -130,11 +138,11 @@ function notarizeMaybe() {
     appBundleId: 'com.electron.fiddle',
     appleId: process.env.APPLE_ID,
     appleIdPassword: process.env.APPLE_ID_PASSWORD,
-    ascProvider: 'LT94ZKYDCJ'
-  }
+    ascProvider: 'LT94ZKYDCJ',
+  };
 }
 
-notarizeMaybe()
+notarizeMaybe();
 
 // Finally, export it
-module.exports = config
+module.exports = config;

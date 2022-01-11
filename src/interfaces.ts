@@ -1,5 +1,3 @@
-export type WindowNames = 'main';
-
 export type Files = Map<string, string>;
 
 export type FileTransform = (files: Files) => Promise<Files>;
@@ -8,26 +6,37 @@ export enum VersionState {
   ready = 'ready',
   downloading = 'downloading',
   unzipping = 'unzipping',
-  unknown = 'unknown'
+  unknown = 'unknown',
 }
 
 export enum VersionSource {
   remote = 'remote',
-  local = 'local'
+  local = 'local',
 }
+
+export enum GistActionType {
+  publish = 'Publish',
+  update = 'Update',
+  delete = 'Delete',
+}
+
+export enum GistActionState {
+  publishing = 'publishing',
+  updating = 'updating',
+  deleting = 'deleting',
+  none = 'none',
+}
+
 export interface Version {
   version: string;
   name?: string;
   localPath?: string;
 }
 
-export interface EditorValues {
-  main: string;
-  renderer: string;
-  html: string;
-  preload: string;
-  css: string;
-  package?: string;
+export enum RunResult {
+  SUCCESS = 'success', // exit code === 0
+  FAILURE = 'failure', // ran, but exit code !== 0
+  INVALID = 'invalid', // could not run
 }
 
 export interface RunnableVersion extends Version {
@@ -36,15 +45,44 @@ export interface RunnableVersion extends Version {
   downloadProgress?: number;
 }
 
+export const enum ElectronReleaseChannel {
+  stable = 'Stable',
+  beta = 'Beta',
+  nightly = 'Nightly',
+}
+
 export interface SetFiddleOptions {
   filePath?: string;
   templateName?: string;
   gistId?: string;
 }
 
+export interface SetUpMenuOptions {
+  acceleratorsToBlock?: BlockableAccelerator[] | null;
+  activeTemplate?: string | null;
+}
+
+export interface SetupRequest {
+  fiddle?: SetFiddleOptions;
+  version?: string;
+  showChannels: ElectronReleaseChannel[];
+  hideChannels: ElectronReleaseChannel[];
+  useObsolete?: boolean;
+}
+
+export interface BisectRequest {
+  setup: SetupRequest;
+  goodVersion: string;
+  badVersion: string;
+}
+
+export interface TestRequest {
+  setup: SetupRequest;
+}
+
 export interface OutputEntry {
   text: string;
-  timestamp: number;
+  timeString: string;
   isNotPre?: boolean;
 }
 
@@ -55,9 +93,12 @@ export interface OutputOptions {
 
 export interface GenericDialogOptions {
   type: GenericDialogType;
-  ok?: string;
+  ok: string;
   cancel?: string;
-  label: string;
+  wantsInput: boolean;
+  defaultInput?: string;
+  label: string | JSX.Element;
+  placeholder?: string;
 }
 
 export interface Templates {
@@ -70,29 +111,19 @@ export const enum GenericDialogType {
   'success' = 'success',
 }
 
-// Editors
-export const enum EditorId {
-  'main' = 'main',
-  'renderer' = 'renderer',
-  'html' = 'html',
-  'preload' = 'preload',
-  'css' = 'css'
-}
+export type EditorId = `${string}.${'js' | 'html' | 'css'}`;
 
-// Panels that can show up as a mosaic
-export const enum PanelId {
-  'docsDemo' = 'docsDemo'
-}
+export type EditorValues = Record<EditorId, string>;
 
-export type MosaicId = EditorId | PanelId;
+// main.js gets special treatment: it is required as the entry point
+// when we run fiddles or create a package.json to package fiddles.
+export const MAIN_JS = 'main.js';
 
-export const ALL_EDITORS = [EditorId.main, EditorId.renderer, EditorId.preload, EditorId.html, EditorId.css];
-export const ALL_PANELS = [PanelId.docsDemo];
-export const ALL_MOSAICS = [...ALL_EDITORS, ...ALL_PANELS];
+export const PACKAGE_NAME = 'package.json';
 
 export type ArrowPosition = 'top' | 'left' | 'bottom' | 'right';
 
-export const enum DocsDemoPage {
-  DEFAULT = 'DEFAULT',
-  DEMO_APP = 'DEMO_APP'
+export const enum BlockableAccelerator {
+  save = 'save',
+  saveAs = 'saveAs',
 }

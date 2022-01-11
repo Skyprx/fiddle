@@ -1,7 +1,11 @@
 import { ipcMain } from 'electron';
 import { EventEmitter } from 'events';
 
-import { IpcEvents, ipcMainEvents, WEBCONTENTS_READY_FOR_IPC_SIGNAL } from '../ipc-events';
+import {
+  IpcEvents,
+  ipcMainEvents,
+  WEBCONTENTS_READY_FOR_IPC_SIGNAL,
+} from '../ipc-events';
 import { getOrCreateMainWindow } from './windows';
 
 /**
@@ -12,9 +16,12 @@ import { getOrCreateMainWindow } from './windows';
  * @class IpcManager
  * @extends {EventEmitter}
  */
-export class IpcMainManager extends EventEmitter {
+class IpcMainManager extends EventEmitter {
   public readyWebContents = new WeakSet<Electron.WebContents>();
-  private messageQueue = new WeakMap<Electron.WebContents, Array<[IpcEvents, Array<any> | undefined]>>();
+  private messageQueue = new WeakMap<
+    Electron.WebContents,
+    Array<[IpcEvents, Array<any> | undefined]>
+  >();
 
   constructor() {
     super();
@@ -24,16 +31,19 @@ export class IpcMainManager extends EventEmitter {
       ipcMain.on(name, (...args: Array<any>) => this.emit(name, ...args));
     });
 
-    ipcMain.on(WEBCONTENTS_READY_FOR_IPC_SIGNAL, (event: Electron.IpcMainEvent) => {
-      this.readyWebContents.add(event.sender);
+    ipcMain.on(
+      WEBCONTENTS_READY_FOR_IPC_SIGNAL,
+      (event: Electron.IpcMainEvent) => {
+        this.readyWebContents.add(event.sender);
 
-      const queue = this.messageQueue.get(event.sender);
-      this.messageQueue.delete(event.sender);
-      if (!queue) return;
-      for (const item of queue) {
-        this.send(item[0], item[1], event.sender);
-      }
-    });
+        const queue = this.messageQueue.get(event.sender);
+        this.messageQueue.delete(event.sender);
+        if (!queue) return;
+        for (const item of queue) {
+          this.send(item[0], item[1], event.sender);
+        }
+      },
+    );
   }
 
   /**
@@ -44,7 +54,11 @@ export class IpcMainManager extends EventEmitter {
    * @param {Array<any>} args
    * @param {Electron.WebContents} [target]
    */
-  public send(channel: IpcEvents, args?: Array<any>, target?: Electron.WebContents) {
+  public send(
+    channel: IpcEvents,
+    args?: Array<any>,
+    target?: Electron.WebContents,
+  ) {
     const _target = target || getOrCreateMainWindow().webContents;
     const _args = args || [];
     if (!this.readyWebContents.has(_target)) {
@@ -54,6 +68,22 @@ export class IpcMainManager extends EventEmitter {
     }
 
     _target.send(channel, ..._args);
+  }
+
+  public handle(
+    channel: IpcEvents,
+    listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any,
+  ) {
+    // there can be only one, so remove previous one first
+    ipcMain.removeHandler(channel);
+    ipcMain.handle(channel, listener);
+  }
+
+  public handleOnce(
+    channel: IpcEvents,
+    listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => any,
+  ) {
+    ipcMain.handleOnce(channel, listener);
   }
 }
 

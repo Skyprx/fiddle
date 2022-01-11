@@ -1,36 +1,39 @@
-import { remote } from 'electron';
 import { observer } from 'mobx-react';
 import * as React from 'react';
+import { IpcEvents } from '../../ipc-events';
 
-import { getTitle } from '../../utils/get-title';
+import { ipcRendererManager } from '../ipc';
 import { AppState } from '../state';
 
-export interface ChromeMacProps {
+interface ChromeMacProps {
   appState: AppState;
 }
+
+/**
+ * Helper method to determine if macOS is running Big Sur or later.
+ *
+ * @returns Whether or not macOS is Big Sur or later.
+ */
+export const isBigSurOrLater = () =>
+  Number(require('os').release().split('.')[0]) >= 20;
 
 @observer
 export class ChromeMac extends React.Component<ChromeMacProps> {
   public handleDoubleClick = () => {
-    const doubleClickAction = remote.systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string');
-    const win = remote.getCurrentWindow();
-    if (doubleClickAction === 'Minimize') {
-      win.minimize();
-    } else if (doubleClickAction === 'Maximize') {
-      if (!win.isMaximized()) {
-        win.maximize();
-      } else {
-        win.unmaximize();
-      }
-    }
-  }
+    ipcRendererManager.send(IpcEvents.CLICK_TITLEBAR_MAC);
+  };
 
   public render() {
     if (process.platform !== 'darwin') return null;
 
+    let className = 'chrome drag';
+    if (isBigSurOrLater()) {
+      className += ' big_sur_or_later';
+    }
+
     return (
-      <div className='chrome drag' onDoubleClick={this.handleDoubleClick}>
-        <small>{getTitle(this.props.appState)}</small>
+      <div className={className} onDoubleClick={this.handleDoubleClick}>
+        <small>{this.props.appState.title}</small>
       </div>
     );
   }
